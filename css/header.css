@@ -1,0 +1,72 @@
+            letter-spacing: var(--ui-letter-spacing);
+            font-family: var(--display-font-family);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            position: relative;
+            overflow: visible;
+            z-index: 121;
+        }
+
+        /* --- 视图切换 Tabs --- */
+        .view-tabs {
+            display: flex;
+            background: var(--card-bg);
+            padding: 4px;
+            border-radius: var(--radius);
+            border: 3px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .view-tab {
+            border: none;
+            background: none;
+            padding: 8px 18px;
+            border-radius: var(--radius);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 700;
+            transition: var(--transition);
+            font-size: 0.9rem;
+            text-transform: var(--ui-text-transform);
+            letter-spacing: var(--ui-letter-spacing);
+            white-space: nowrap;
+            font-family: var(--display-font-family);
+        }
+
+        .view-tab.active {
+            background: var(--accent-color);
+            color: var(--accent-contrast);
+            box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .view-tab:hover:not(.active) {
+            background: var(--bg-color);
+        }
+
+        /* --- 按钮通用样式 --- */
+        .btn-icon,
+        .btn {
+            border: 3px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-main);
+            cursor: pointer;
+            font-weight: 700;
+            text-transform: var(--ui-text-transform);
+            letter-spacing: var(--ui-letter-spacing);
+            font-family: var(--display-font-family);
+            transition: var(--transition);
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius);
+            font-size: 1.1rem;
+            display: flex;

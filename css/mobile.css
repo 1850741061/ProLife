@@ -1,0 +1,1191 @@
+        }
+
+        .mobile-bottom-nav .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 16px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 70px;
+        }
+
+        .mobile-bottom-nav .nav-item i {
+            font-size: 1.3rem;
+            transition: var(--transition);
+        }
+
+        .mobile-bottom-nav .nav-item.active {
+            color: var(--accent-color);
+        }
+
+        .mobile-bottom-nav .nav-item.active i {
+            transform: scale(1.2);
+        }
+
+        .mobile-bottom-nav .nav-item:active {
+            transform: scale(0.95);
+        }
+
+        /* --- 悬浮添加按钮 --- */
+        .mobile-fab {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: var(--accent-color);
+            border: 3px solid var(--border-color);
+            border-radius: 50%;
+            box-shadow: 4px 4px 0 0 var(--border-color);
+            cursor: pointer;
+            z-index: 999;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            font-size: 1.5rem;
+        }
+
+        .mobile-fab:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 0 var(--border-color);
+        }
+
+        .mobile-fab i {
+            transition: var(--transition);
+        }
+
+        .mobile-fab:hover i {
+            transform: rotate(90deg);
+        }
+
+        /* 响应式 - 移动端适配 */
+        @media (max-width: 768px) {
+
+            /* 移动端隐藏拖拽手柄 */
+            .drag-handle {
+                display: none;
+            }
+
+            .todo-item {
+                cursor: default !important;
+            }
+
+            /* 隐藏 Electron 标题栏 */
+            .custom-titlebar {
+                display: none !important;
+            }
+
+            /* 容器和布局 */
+            .main-layout.todo-mode {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: auto;
+                max-height: 80vh;
+                background: var(--card-bg);
+                z-index: 1001;
+                border: 3px solid var(--border-color);
+                border-bottom: none;
+                border-radius: 24px 24px 0 0;
+                transform: translateY(100%);
+                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                overflow-y: auto;
+                padding-bottom: 30px;
+                box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.1);
+            }
+
+            .container {
+                height: 100vh;
+                border-radius: 0;
+                border: none;
+                padding-bottom: 75px;
+            }
+
+            .sidebar-title {
+                font-size: 0.75rem !important;
+                padding: 6px 10px !important;
+            }
+
+            .group-list li {
+                padding: 8px 10px !important;
+                font-size: 0.85rem !important;
+            }
+
+            .add-group-btn {
+                padding: 8px 10px !important;
+                font-size: 0.8rem !important;
+            }
+
+            body {
+                padding: 0;
+            }
+
+            .todo-actions {
+                opacity: 1;
+            }
+
+            /* 头部区域 */
+            header {
+                padding: 8px 10px;
+                flex-wrap: nowrap;
+                gap: 6px;
+                justify-content: space-between;
+            }
+
+            h1 {
+                font-size: 1rem;
+                gap: 6px;
+                flex-shrink: 0;
+            }
+
+            .header-controls {
+                gap: 4px;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+
+            .header-controls::-webkit-scrollbar {
+                display: none;
+            }
+
+            .header-controls>div:first-child {
+                display: none;
+            }
+
+            .header-controls>div:last-child {
+                display: flex;
+                gap: 3px;
+                flex-shrink: 0;
+            }
+
+            /* 顶部导航隐藏（使用底部导航切换视图） */
+            header .view-tabs {
+                display: none !important;
+            }
+
+            /* 待办内的列表/看板/连线 切换保留但紧凑化 */
+            #todoFilterBar~div .view-tabs,
+            .content-view .view-tabs {
+                display: flex !important;
+                padding: 2px !important;
+            }
+
+            .content-view .view-tab,
+            #todoFilterBar~div .view-tab {
+                padding: 5px 10px;
+                font-size: 0.75rem;
+            }
+
+            /* 移动端隐藏部分按钮和元素 */
+            #batchModeBtn,
+            #pomodoroBtn {
+                display: none !important;
+            }
+
+            /* 底部导航替代 */
+            .mobile-group-toggle {
+                display: none !important;
+            }
+
+            /* 集成到底部导航 */
+
+            /* 移动端按钮优化 - 触摸友好 */
+            .btn-icon {
+                width: 36px !important;
+                height: 36px !important;
+                min-width: 36px !important;
+                min-height: 36px !important;
+                font-size: 1rem !important;
+                padding: 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            /* 移动端归档卡片优化 */
+            .archive-list .todo-item {
+                padding: 12px !important;
+                margin-bottom: 10px !important;
+                font-size: 0.9rem;
+            }
+
+            .archive-list .todo-item .btn-icon {
+                width: 32px !important;
+                height: 32px !important;
+                min-width: 32px !important;
+                padding: 0 !important;
+                font-size: 0.9rem !important;
+            }
+
+            .archive-list input[type="checkbox"] {
+                width: 18px !important;
+                height: 18px !important;
+                margin-top: 3px !important;
+            }
+
+            /* 归档卡片信息行优化 */
+            .archive-list .todo-item>div>div:last-child {
+                font-size: 0.75rem !important;
+                gap: 8px !important;
+            }
+
+            /* 归档卡片文本优化 */
+            .archive-list .todo-item>div>div:first-child>span:first-child {
+                font-size: 0.95rem !important;
+                line-height: 1.4 !important;
+            }
+
+            /* 归档卡片标签优化 */
+            .archive-list .todo-item>div>div:first-child>span:nth-child(2) {
+                font-size: 0.7rem !important;
+                padding: 2px 6px !important;
+            }
+
+            /* 移动端搜索框优化 - 悬浮弹窗 */
+            #searchBoxContainer {
+                position: fixed !important;
+                top: 65px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: calc(100% - 20px);
+                max-width: 500px;
+                z-index: 1500;
+                background: var(--card-bg);
+                padding: 12px;
+                border: 3px solid var(--border-color);
+                border-radius: var(--radius);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+            }
+
+            #searchInput {
+                width: 100% !important;
+                max-width: none !important;
+                padding: 12px 40px 12px 12px !important;
+                font-size: 1rem !important;
+                border: 2px solid var(--border-color);
+                border-radius: var(--radius);
+                background: var(--bg-color);
+            }
+
+            #clearSearchBtn {
+                right: 20px !important;
+                font-size: 1.2rem !important;
+            }
+
+            /* 全局搜索模态框移动端优化 */
+            #globalSearchModal .modal {
+                max-width: calc(100% - 20px) !important;
+                margin: 10px;
+                max-height: calc(100vh - 20px);
+            }
+
+            #globalSearchInput {
+                font-size: 1rem !important;
+                padding: 12px 40px 12px 15px !important;
+            }
+
+            #globalSearchResults {
+                max-height: calc(100vh - 250px) !important;
+            }
+
+            .search-result-item {
+                padding: 10px 12px !important;
+                margin-bottom: 8px !important;
+            }
+
+            .search-result-item i {
+                font-size: 1.1rem !important;
+            }
+
+            /* 显示移动端底部导航 */
+            .mobile-bottom-nav {
+                display: block;
+            }
+
+            /* 显示移动端悬浮按钮 */
+            .mobile-fab {
+                display: flex;
+            }
+
+            /* 统计栏 */
+            .stats-bar {
+                padding: 8px;
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+
+            .stat-item {
+                padding: 8px 6px;
+            }
+
+            .stat-value {
+                font-size: 1.2rem;
+            }
+
+            .stat-label {
+                font-size: 0.65rem;
+            }
+
+            /* 内容区域 */
+            .content-view {
+                padding: 12px 10px;
+            }
+
+            /* === 过滤栏 + DDL + 视图切换: 整体堆叠布局 === */
+            /* 外层包裹 div (filter bar + view tabs) 改为垂直堆叠 */
+            #todoView>div:nth-child(3) {
+                flex-direction: column !important;
+                gap: 8px !important;
+                margin-bottom: 12px !important;
+            }
+
+            /* 过滤按钮行 */
+            #todoFilterBar {
+                flex-wrap: wrap !important;
+                gap: 4px !important;
+                justify-content: flex-start !important;
+            }
+
+            #todoFilterBar .btn {
+                padding: 5px 10px !important;
+                font-size: 0.75rem !important;
+                min-height: 32px !important;
+                min-width: auto !important;
+            }
+
+            /* DDL按钮取消左边距 */
+            #btnSortDDLTime {
+                margin-left: 0 !important;
+            }
+
+            /* 视图切换 + 清除按钮行 */
+            #todoView>div:nth-child(3)>div:last-child {
+                width: 100% !important;
+                justify-content: space-between !important;
+            }
+
+            /* 视图切换按钮紧凑化 */
+            #todoView .view-tabs {
+                padding: 2px !important;
+            }
+
+            #todoView .view-tab {
+                padding: 5px 8px !important;
+                font-size: 0.75rem !important;
+            }
+
+            /* 日历控件移动端 */
+            .calendar-controls {
+                padding: 10px !important;
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+                justify-content: center !important;
+            }
+
+            .calendar-controls h2 {
+                font-size: 1rem !important;
+                width: 100% !important;
+                text-align: center !important;
+            }
+
+            /* 日历网格移动端优化 */
+            .calendar-grid {
+                gap: 3px !important;
+            }
+
+            .calendar-day {
+                min-height: 52px !important;
+                padding: 4px !important;
+                border-width: 2px !important;
+            }
+
+            .day-number {
+                font-size: 0.8rem !important;
+                margin-bottom: 2px !important;
+            }
+
+            .day-task-dot {
+                width: 6px !important;
+                height: 6px !important;
+            }
+
+            .calendar-detail-view {
+                padding: 15px !important;
+                margin-top: 15px !important;
+            }
+
+            /* 连线视图移动端 */
+            #connectionView {
+                min-height: 300px !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* 思维导图移动端 */
+            .mindmap-toolbar {
+                padding: 8px 10px !important;
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+            }
+
+            .mindmap-toolbar h2 {
+                font-size: 0.95rem !important;
+                gap: 6px !important;
+            }
+
+            .mindmap-toolbar-actions {
+                gap: 4px !important;
+                flex-wrap: wrap !important;
+            }
+
+            .mindmap-toolbar-actions .btn {
+                padding: 5px 8px !important;
+                font-size: 0.72rem !important;
+                min-height: 32px !important;
+                min-width: auto !important;
+            }
+
+            #mindmapContainer {
+                overflow: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* 思维导图弹窗 + 详情面板移动端 */
+            .mm-popup {
+                max-width: calc(100vw - 24px) !important;
+                margin: 10px !important;
+                padding: 16px !important;
+            }
+
+            .mm-detail-panel {
+                width: 100% !important;
+                max-width: 100% !important;
+                right: -100% !important;
+                border-left: none !important;
+                border-top: 3px solid var(--border-color) !important;
+                max-height: 55vh !important;
+                overflow-y: auto !important;
+                padding: 16px !important;
+            }
+
+            .mm-detail-panel.open {
+                right: 0 !important;
+            }
+
+            /* 任务卡片移动端优化 */
+            .todo-item {
+                padding: 12px !important;
+                margin-bottom: 8px !important;
+                border-width: 2px !important;
+            }
+
+            .todo-actions {
+                opacity: 1 !important;
+                gap: 4px !important;
+            }
+
+            .todo-actions .action-icon {
+                font-size: 0.9rem !important;
+                padding: 4px !important;
+            }
+
+            /* 输入区域移动端 */
+            .input-section>div {
+                gap: 8px !important;
+            }
+
+            .input-section {
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+
+            .input-group {
+                gap: 6px !important;
+            }
+
+            /* 优化移动端输入体验 */
+            input:not([type="checkbox"]),
+            select,
+            textarea {
+                padding: 14px;
+                font-size: 16px;
+                /* 防止 iOS 缩放 */
+                min-height: 44px;
+                /* 符合触摸标准 */
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+            }
+
+            /* 移动端 checkbox 样式优化 */
+            input[type="checkbox"] {
+                -webkit-appearance: checkbox;
+                -moz-appearance: checkbox;
+                appearance: checkbox;
+                width: 20px;
+                height: 20px;
+                cursor: pointer;
+                flex-shrink: 0;
+            }
+
+            textarea {
+                min-height: 80px;
+                resize: vertical;
+            }
+
+            .custom-select-trigger {
+                padding: 14px 40px 14px 14px;
+                font-size: 16px;
+                min-height: 44px;
+            }
+
+            button,
+            .btn {
+                min-height: 38px;
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+
+            .btn-icon {
+                padding: 6px;
+            }
+
+            .btn-primary {
+                padding: 8px 14px !important;
+                font-size: 0.85rem !important;
+            }
+
+            /* 改善移动端触摸反馈 */
+            button:active,
+            .btn:active,
+            .btn-icon:active {
+                transform: scale(0.95);
+                opacity: 0.8;
+            }
+
+            .todo-item:active {
+                background: var(--bg-color);
+                transform: scale(0.98);
+            }
+
+            .view-tab:active,
+            .filter-btn:active {
+                transform: scale(0.95);
+            }
+
+            /* 月度详情模态框移动端优化 */
+            #monthDetailModal .modal {
+                max-width: 100% !important;
+                margin: 10px;
+                max-height: calc(100vh - 20px) !important;
+            }
+
+            #monthDetailModal .modal h2 {
+                font-size: 1.1rem !important;
+            }
+
+            /* 月度统计卡片 - 移动端改为垂直排列 */
+            .month-stats-cards {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+
+            .month-stats-cards .finance-card {
+                padding: 12px !important;
+            }
+
+            .month-stats-cards .amount {
+                font-size: 1.3rem !important;
+            }
+
+            /* 饼图容器 - 移动端改为垂直排列 */
+            .pie-chart-container {
+                grid-template-columns: 1fr !important;
+                gap: 15px !important;
+            }
+
+            .pie-chart-container svg {
+                max-width: 200px !important;
+                height: auto !important;
+            }
+
+            #pieChartLegend {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+            }
+
+            #pieChartLegend div {
+                font-size: 0.85rem !important;
+                padding: 6px !important;
+            }
+
+            #pieChartLegend div div:last-child {
+                font-size: 0.8rem !important;
+            }
+
+            /* 分类统计卡片移动端优化 */
+            #monthCategoryStats>div {
+                padding: 10px !important;
+                font-size: 0.85rem !important;
+            }
+
+            #monthCategoryStats .cat-badge {
+                font-size: 0.8rem !important;
+                padding: 3px 8px !important;
+            }
+
+            /* 预算进度条移动端 */
+            #monthCategoryStats [style*="height: 8px"] {
+                height: 6px !important;
+            }
+
+            #monthCategoryStats [style*="font-size: 0.8rem"] {
+                font-size: 0.75rem !important;
+            }
+
+            /* 月份列表卡片移动端优化 */
+            .month-group {
+                margin-bottom: 15px !important;
+            }
+
+            .month-header {
+                padding: 12px !important;
+                font-size: 0.9rem !important;
+            }
+
+            .month-title {
+                font-size: 1rem !important;
+            }
+
+            .month-summary {
+                gap: 10px !important;
+                padding: 10px !important;
+            }
+
+            .summary-item {
+                font-size: 0.75rem !important;
+            }
+
+            .summary-amount {
+                font-size: 1.1rem !important;
+            }
+
+            .month-transactions {
+                max-height: 250px !important;
+            }
+
+            .transaction-item {
+                padding: 10px !important;
+                font-size: 0.85rem !important;
+            }
+
+            .transaction-item .t-amount {
+                font-size: 1rem !important;
+            }
+
+            .transaction-item .cat-badge {
+                font-size: 0.75rem !important;
+                padding: 3px 8px !important;
+            }
+
+            /* 记账输入区域移动端优化 */
+            .finance-cards {
+                gap: 10px !important;
+                margin-bottom: 15px !important;
+            }
+
+            .finance-card {
+                padding: 12px !important;
+            }
+
+            .finance-card .amount {
+                font-size: 1.2rem !important;
+            }
+
+            /* 财务筛选栏移动端 */
+            .finance-filter-bar {
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+                padding: 10px !important;
+            }
+
+            .filter-btn {
+                font-size: 0.8rem !important;
+                padding: 6px 12px !important;
+            }
+
+            .view-tab:active,
+            .filter-btn:active {
+                transform: scale(0.95);
+            }
+
+            .kanban-card:active {
+                transform: scale(0.98);
+                box-shadow: 2px 2px 0 0 var(--border-color);
+            }
+
+            .action-icon:active {
+                transform: scale(1.2);
+            }
+
+            /* 触摸高亮优化 */
+            * {
+                -webkit-tap-highlight-color: transparent;
+                -webkit-touch-callout: none;
+            }
+
+            /* 可点击元素的触摸反馈 */
+            a,
+            button,
+            [onclick],
+            .clickable {
+                -webkit-tap-highlight-color: rgba(var(--accent-color-rgb), 0.2);
+            }
+
+            /* 移动端模态框优化 */
+            .modal {
+                max-width: 95% !important;
+                max-height: 85vh;
+                overflow-y: auto;
+            }
+
+            /* 统计视图移动端优化 */
+            #statsModal .modal {
+                padding: 0;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            /* 统计模态框头部 */
+            #statsModal>.modal>div:first-child {
+                padding: 12px 15px;
+                position: sticky;
+                top: 0;
+                background: var(--card-bg);
+                z-index: 10;
+                border-bottom: 2px solid var(--border-color);
+            }
+
+            /* 统计卡片区域 - 4列紧凑显示 */
+            #statsModal>.modal>div[style*="grid-template-columns: repeat(4"] {
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 8px !important;
+                margin: 0 !important;
+                padding: 10px 12px;
+            }
+
+            /* 单个统计卡片 */
+            #statsModal>.modal>div[style*="grid-template-columns"]>div {
+                padding: 10px 6px !important;
+            }
+
+            #statsModal div[style*="font-size: 2rem"] {
+                font-size: 1.2rem !important;
+                line-height: 1.2 !important;
+            }
+
+            #statsModal div[style*="font-size: 0.75rem"] {
+                font-size: 0.55rem !important;
+                margin-top: 3px !important;
+            }
+
+            /* 可滚动内容区域 */
+            #statsModal>.modal>div[style*="overflow-y: auto"] {
+                overflow-y: visible;
+                padding: 12px 15px 15px 15px;
+            }
+
+            /* 图表区域 - 单列 */
+            #statsModal div[style*="grid-template-columns: 1fr 1fr"] {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+                margin-bottom: 15px !important;
+            }
+
+            #statsModal canvas {
+                max-height: 200px !important;
+                width: 100% !important;
+            }
+
+            /* 图表容器 */
+            #statsModal>.modal>div[style*="overflow-y: auto"]>div>div[style*="padding: 25px"] {
+                padding: 12px !important;
+            }
+
+            /* 项目卡片 - 单列 */
+            #statsModal #projectStatsList {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            #statsModal #projectStatsList>div {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+                padding: 12px !important;
+            }
+
+            #statsModal #projectStatsList>div>div {
+                padding: 10px !important;
+            }
+
+            /* 登录模态框移动端优化 */
+            #authModal .modal {
+                padding: 20px 15px;
+            }
+
+            #authModal input[type="email"],
+            #authModal input[type="password"] {
+                font-size: 16px !important;
+                padding: 14px !important;
+            }
+
+            #authModal .btn {
+                min-height: 44px;
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+
+            /* 待办项优化 */
+            .todo-item {
+                padding: 12px;
+                border-width: 2px;
+            }
+
+            .todo-main {
+                gap: 10px;
+            }
+
+            .todo-text {
+                font-size: 0.95rem;
+                line-height: 1.4;
+            }
+
+            .todo-attributes {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .attribute-badge {
+                font-size: 0.7rem;
+                padding: 4px 8px;
+                border-width: 2px;
+            }
+
+            .todo-notes {
+                font-size: 0.85rem;
+                padding: 10px;
+                margin-top: 10px;
+            }
+
+            /* 子任务优化 */
+            .subtasks-section {
+                margin-top: 12px;
+            }
+
+            .subtasks-header {
+                padding: 8px 10px;
+                font-size: 0.8rem;
+            }
+
+            .subtask-list {
+                gap: 8px;
+                margin-top: 8px;
+            }
+
+            .subtask-item {
+                padding: 10px;
+                border-width: 2px;
+                font-size: 0.9rem;
+            }
+
+            .subtask-checkbox {
+                width: 20px !important;
+                height: 20px !important;
+                min-width: 20px !important;
+            }
+
+            .subtask-delete,
+            .subtask-edit {
+                opacity: 1 !important;
+                padding: 8px;
+            }
+
+            .add-subtask-btn {
+                padding: 6px 12px;
+                font-size: 0.75rem;
+            }
+
+            .add-subtask-input input {
+                font-size: 16px;
+                padding: 10px;
+            }
+
+            .add-subtask-input button {
+                padding: 10px 14px;
+            }
+
+            /* 分组 - 移动端从底部展开 (Bottom Sheet) */
+            .sidebar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                height: auto;
+                max-height: 80vh;
+                background: var(--card-bg);
+                border-top: 3px solid var(--border-color);
+                border-right: none;
+                border-radius: 24px 24px 0 0;
+                z-index: 1001;
+                transform: translateY(100%);
+                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                overflow-y: auto;
+                padding-bottom: 30px;
+                box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.1);
+            }
+
+            .sidebar.mobile-open {
+                display: block !important;
+                transform: translateY(0);
+                animation: none;
+            }
+
+            .mobile-group-toggle {
+                display: none !important;
+            }
+
+            .mobile-sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 899;
+            }
+
+            .mobile-sidebar-overlay.active {
+                display: block;
+            }
+
+            .group-item {
+                padding: 10px 12px;
+                margin-bottom: 8px;
+            }
+
+            .group-actions {
+                opacity: 1 !important;
+            }
+
+            /* 按钮 */
+            .btn {
+                padding: 8px 14px;
+                font-size: 0.8rem;
+            }
+
+            /* .btn-icon 在前面已定义 */
+
+            /* 模态框 */
+            .modal {
+                max-width: 95%;
+                margin: 20px 10px;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            .modal h2 {
+                font-size: 1.2rem;
+            }
+
+            /* 日历视图优化 */
+            .calendar-controls {
+                flex-direction: row !important;
+                padding: 10px;
+            }
+
+            .calendar-controls h2 {
+                font-size: 1rem;
+            }
+
+            .calendar-header {
+                flex-wrap: wrap;
+            }
+
+            .calendar-grid {
+                gap: 3px;
+            }
+
+            .calendar-day {
+                min-height: 55px;
+                font-size: 0.75rem;
+                padding: 4px;
+                border-width: 2px;
+            }
+
+            .calendar-day:hover {
+                transform: none;
+            }
+
+            .calendar-day-number,
+            .day-number {
+                font-size: 0.85rem;
+                margin-bottom: 3px;
+            }
+
+            .task-dot {
+                width: 4px;
+                height: 4px;
+                margin: 1px;
+            }
+
+            /* 记账视图优化 */
+            .finance-header {
+                flex-direction: column;
+                gap: 10px;
+                padding: 12px;
+            }
+
+            .finance-controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .finance-controls .btn {
+                flex: 1;
+                padding: 10px 12px;
+            }
+
+            /* 记账视图切换按钮在移动端显示 */
+            #financeView .view-tabs {
+                display: flex !important;
+                padding: 3px !important;
+            }
+
+            #financeView .view-tab {
+                padding: 8px 16px !important;
+                font-size: 0.85rem !important;
+            }
+
+            /* 统计卡片优化 */
+            .finance-cards {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                margin-bottom: 15px;
+            }
+
+            .finance-card {
+                padding: 12px;
+                border-width: 2px;
+                box-shadow: 2px 2px 0 0 var(--border-color);
+            }
+
+            .finance-card h3 {
+                font-size: 0.65rem;
+                margin-bottom: 6px;
+            }
+
+            .finance-card .amount {
+                font-size: 1.3rem;
+                line-height: 1.2;
+            }
+
+            .transaction-item {
+                padding: 12px;
+                border-width: 2px;
+            }
+
+            .t-info {
+                gap: 8px;
+            }
+
+            .t-category {
+                font-size: 0.85rem;
+            }
+
+            .t-date {
+                font-size: 0.75rem;
+            }
+
+            .t-amount {
+                font-size: 1.1rem;
+                font-weight: 800;
+            }
+
+            .t-notes {
+                font-size: 0.8rem;
+                margin-top: 6px;
+            }
+
+            /* 月份视图优化 */
+            .month-group {
+                border-width: 2px;
+                margin-bottom: 15px;
+            }
+
+            .month-header {
+                padding: 12px 15px;
+                font-size: 0.9rem;
+            }
+
+            .month-summary {
+                gap: 15px;
+                padding: 12px 15px;
+            }
+
+            .summary-item {
+                font-size: 0.8rem;
+            }
+
+            .summary-amount {
+                font-size: 1.2rem;
+            }
+
+            .filter-chip {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* --- 看板视图样式 --- */
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding-bottom: 50px;
+        }
+
+        .kanban-column {
+            background: var(--bg-color);
+            border: 3px solid var(--border-color);
+            border-radius: var(--radius);
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .kanban-column-header {
+            padding: 15px 20px;
+            background: var(--card-bg);

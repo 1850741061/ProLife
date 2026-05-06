@@ -1,0 +1,106 @@
+        .finance-card h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .finance-card .amount {
+            font-size: 2.5rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .finance-card.income {
+            background: var(--success-color);
+        }
+
+        .finance-card.expense {
+            background: var(--danger-color);
+        }
+
+        .finance-filter-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .filter-chip {
+            border: 2px solid var(--border-color);
+            background: var(--card-bg);
+            padding: 5px 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-chip.active {
+            background: var(--accent-color);
+            box-shadow: 2px 2px 0 0 var(--border-color);
+        }
+
+        .transaction-item {
+            background: var(--card-bg);
+            border: 3px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left-width: 10px;
+            /* 保持条纹宽度 */
+        }
+
+        /* 列表中的分类颜色徽章 */
+        .cat-badge {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: var(--radius);
+            background: #ccc;
+            /* Fallback */
+            display: inline-block;
+            margin-right: 8px;
+            border: 1px solid var(--text-main);
+        }
+
+        .t-amount {
+            font-weight: 900;
+            font-size: 1.2rem;
+        }
+
+        .t-amount.income {
+            color: var(--success-color);
+        }
+
+        .t-amount.expense {
+            color: var(--danger-color);
+        }
+
+        /* --- 模态框 --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;

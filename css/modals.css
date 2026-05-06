@@ -1,0 +1,161 @@
+        }
+
+        .modal {
+            background: var(--card-bg);
+            padding: 30px;
+            border: 3px solid var(--border-color);
+            border-radius: var(--radius);
+            box-shadow: 10px 10px 0 0 var(--border-color);
+            width: 90%;
+            max-width: 450px;
+            transform: scale(0.9);
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal h2 {
+            text-transform: uppercase;
+            font-weight: 800;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .category-manager-modal {
+            width: min(960px, calc(100vw - 40px));
+            max-width: 960px;
+            max-height: min(88vh, 920px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .category-manager-list {
+            flex: 1;
+            min-height: 0;
+            max-height: none;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding-right: 6px;
+        }
+
+        .category-manager-form-shell {
+            flex-shrink: 0;
+        }
+
+        .category-manager-form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        @media (max-width: 900px) {
+            .category-manager-modal {
+                width: calc(100vw - 24px);
+                max-height: calc(100vh - 24px);
+                padding: 20px;
+            }
+
+            .category-manager-form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .category-manager-list {
+                padding-right: 0;
+            }
+        }
+
+        /* 模态框内的 Select 保持完整倒V箭头 */
+        .modal select {
+            width: 100%;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            border: 3px solid var(--border-color);
+            border-radius: var(--radius);
+            background: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            font-weight: 700;
+            font-size: 1.05rem;
+            padding: 18px 50px 18px 15px;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%2C9%2012%2C15%2018%2C9%22%20/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 20px;
+            color: var(--text-main);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .modal select:hover,
+        .modal select:focus {
+            background: var(--card-bg);
+            border-color: var(--accent-color);
+            box-shadow: 2px 2px 0 0 var(--border-color);
+            transform: none;
+        }
+
+        .color-picker {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+            max-width: 100%;
+        }
+
+        .color-option {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid var(--border-color);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .color-option:hover {
+            transform: scale(1.15);
+        }
+
+        .color-option.selected {
+            transform: scale(1.25);
+            box-shadow: 0 0 0 3px var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .color-option.selected::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- 复选框 Pop 风格 --- */
+        .checkbox {
+            position: relative;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+
+        .checkbox input {
+            opacity: 0;
+            cursor: pointer;
+            position: absolute;
+        }
+
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 24px;

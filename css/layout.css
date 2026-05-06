@@ -1,0 +1,219 @@
+        }
+
+        #groupList {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        #sidebarProjectSection {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        #projectListSidebar {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-title {
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: var(--ui-text-transform);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--border-color);
+            letter-spacing: var(--ui-letter-spacing);
+            font-family: var(--display-font-family);
+        }
+
+        .group-list {
+            list-style: none;
+        }
+
+        .group-item {
+            padding: 12px 16px;
+            border: 3px solid var(--border-color);
+            border-radius: var(--radius);
+            cursor: pointer;
+            margin-bottom: 12px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+            background: var(--card-bg);
+            position: relative;
+        }
+
+        .group-item:hover {
+            background: var(--bg-color);
+            transform: translate(-2px, -2px);
+            box-shadow: 3px 3px 0 0 var(--border-color);
+        }
+
+        .group-item.active {
+            background: var(--accent-color);
+            box-shadow: 3px 3px 0 0 var(--border-color);
+            color: var(--accent-contrast);
+        }
+
+        .group-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .group-name span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .group-color {
+            width: 16px;
+            height: 16px;
+            border-radius: var(--radius);
+            border: 2px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .add-group-btn {
+            width: 100%;
+            padding: 12px;
+            border: 3px dashed var(--border-color);
+            background: none;
+            color: var(--text-main);
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 700;
+            text-transform: uppercase;
+            transition: var(--transition);
+            margin-top: 15px;
+        }
+
+        .add-group-btn:hover {
+            border-style: solid;
+            background: var(--accent-color);
+            box-shadow: 3px 3px 0 0 var(--border-color);
+            color: var(--accent-contrast);
+        }
+
+        .group-actions {
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: var(--transition);
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .group-item:hover .group-actions,
+        .group-item.active .group-actions {
+            opacity: 1;
+        }
+
+        .group-action-btn {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: var(--radius);
+            font-size: 0.95rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+        }
+
+        .group-action-btn:hover {
+            opacity: 1;
+            background: var(--bg-color);
+        }
+
+        /* --- 内容区域 --- */
+        .content {
+            flex: 1;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .content-view {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            padding: 30px;
+            overflow-y: auto;
+            background-image: var(--content-pattern);
+            background-size: var(--content-pattern-size);
+            background-color: var(--bg-color);
+        }
+
+        .content-view.active {
+            display: flex;
+        }
+
+        /* --- 统计栏 --- */
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: var(--card-bg);
+            border: 3px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--primary-color);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: var(--ui-text-transform);
+            font-weight: 800;
+            margin-top: 5px;
+            letter-spacing: var(--ui-letter-spacing);
+            font-family: var(--display-font-family);
+        }
+
+        /* --- 输入控件区域 --- */
+        .input-section {
+            background: var(--card-bg);
+            border: 3px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 4px 4px 0 0 var(--border-color);
+            transition: var(--transition);
+        }
+
+        /* 折叠状态 */
+        .input-section.collapsed {
+            display: none;
+        }
+
+        /* 核心：统一的输入控件 Pop 风格 (大格子) */
+        input,
+        select,
+        textarea {

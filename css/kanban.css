@@ -1,0 +1,181 @@
+            border-bottom: 3px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 0.95rem;
+        }
+
+        .kanban-column-header i {
+            font-size: 0.7rem;
+        }
+
+        .kanban-count {
+            margin-left: auto;
+            background: var(--accent-color);
+            color: var(--text-main);
+            padding: 4px 10px;
+            border-radius: var(--radius);
+            font-size: 0.85rem;
+            min-width: 28px;
+            text-align: center;
+            border: 2px solid var(--border-color);
+        }
+
+        .kanban-column-content {
+            flex: 1;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+        }
+
+        .kanban-card {
+            background: var(--card-bg);
+            border: 3px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 15px;
+            cursor: grab;
+            transition: var(--transition);
+            border-left-width: 8px;
+        }
+
+        .kanban-card:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: 4px 4px 0 0 var(--border-color);
+        }
+
+        .kanban-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .kanban-card.drag-over {
+            border-style: dashed;
+            background: var(--bg-color);
+        }
+
+        .kanban-card-title {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .kanban-card-meta {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            font-size: 0.75rem;
+        }
+
+        .kanban-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .kanban-card:hover .kanban-card-actions {
+            opacity: 1;
+        }
+
+        /* 响应式看板布局 */
+        @media (max-width: 1024px) {
+            .kanban-board {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .kanban-column {
+                min-height: 300px;
+            }
+        }
+
+        /* 移动端看板优化 */
+        @media (max-width: 768px) {
+            .kanban-board {
+                gap: 12px;
+                padding-bottom: 20px;
+            }
+
+            .kanban-column {
+                min-height: 200px;
+                border-width: 2px;
+            }
+
+            .kanban-column-header {
+                padding: 12px 15px;
+                font-size: 0.85rem;
+                border-bottom-width: 2px;
+            }
+
+            .kanban-column-content {
+                padding: 10px;
+                gap: 10px;
+            }
+
+            .kanban-card {
+                padding: 12px;
+                border-width: 2px;
+                border-left-width: 6px;
+            }
+
+            .kanban-card:hover {
+                transform: none;
+                box-shadow: none;
+            }
+
+            .kanban-card-title {
+                font-size: 0.95rem;
+            }
+
+            .kanban-card-meta {
+                font-size: 0.7rem;
+            }
+
+            .kanban-card-actions {
+                opacity: 1;
+                margin-top: 8px;
+            }
+
+            .kanban-count {
+                padding: 3px 8px;
+                font-size: 0.75rem;
+                border-width: 2px;
+            }
+
+            /* 日历视图奶茶侧边栏移动端堆叠 */
+            #calendarView.active {
+                flex-direction: column !important;
+            }
+            #milkteaSidebar {
+                width: 100% !important;
+                border-left: none !important;
+                border-top: 3px solid var(--border-color);
+            }
+        }
+
+        /* --- 月份分组样式 --- */
+        .month-group {
+            background: var(--card-bg);
+            border: 3px solid var(--border-color);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .month-header {
+            background: var(--accent-color);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--border-color);
+        }
+
+        .month-title {
+            font-size: 1.1rem;
+            font-weight: 900;

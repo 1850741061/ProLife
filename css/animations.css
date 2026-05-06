@@ -1,0 +1,100 @@
+            to {
+                opacity: 1;
+                transform: translateY(0);
+                max-height: 100px;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            to {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .fade-out {
+            animation: fadeOut 0.2s cubic-bezier(0.4, 0, 1, 1);
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            outline: none;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            isolation: isolate;
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+
+        .custom-titlebar,
+        .container {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- 自定义标题栏 --- */
+        .custom-titlebar {
+            height: 45px;
+            background: var(--titlebar-bg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            -webkit-app-region: drag;
+            user-select: none;
+            position: relative;
+        }
+
+        body.dark-mode .custom-titlebar {
+            background: var(--titlebar-bg);
+        }
+
+        /* 浏览器环境隐藏标题栏（通过 JS 添加 .browser-env 类） */
+        body.browser-env .custom-titlebar {
+            display: none !important;

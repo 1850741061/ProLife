@@ -1,0 +1,396 @@
+        :root {
+            /* 核心配色：波普风格 */
+            --primary-color: #383838;
+            --accent-color: #6fc2ff;
+            --accent-contrast: #202020;
+            --header-bg: #ffde00;
+            --success-color: #4ade80;
+            --danger-color: #ff6b6b;
+            --warning-color: #fbbf24;
+            --bg-color: #fdfdfd;
+            --card-bg: #ffffff;
+            --text-main: #383838;
+            --text-secondary: #666666;
+            --border-color: #383838;
+
+            /* 视觉特效：硬朗投影与边框 */
+            --shadow: 6px 6px 0 0 #383838;
+            --radius: 2px;
+            --transition: all 0.2s cubic-bezier(0, 0, 0.2, 1);
+
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --display-font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --ui-text-transform: uppercase;
+            --ui-letter-spacing: 0.08em;
+            --content-pattern: radial-gradient(var(--border-color) 1px, transparent 1px);
+            --content-pattern-size: 20px 20px;
+            --header-overlay: none;
+            --header-shadow: none;
+            --titlebar-bg: var(--header-bg);
+            --titlebar-hover-bg: var(--accent-color);
+            --panel-shadow: var(--shadow);
+            --panel-hover-shadow: 4px 4px 0 0 var(--border-color);
+            --theme-chip-bg: rgba(0, 0, 0, 0.08);
+            --theme-chip-color: var(--text-main);
+            --theme-option-border: rgba(56, 56, 56, 0.16);
+        }
+
+        body.dark-mode {
+            --primary-color: #e0e0e0;
+            --accent-contrast: #0d1117;
+            --bg-color: #1e1e1e;
+            --card-bg: #2d2d2d;
+            --text-main: #e8e8e8;
+            --text-secondary: #b0b0b0;
+            --border-color: #4a4a4a;
+            --shadow: 6px 6px 0 0 rgba(74, 74, 74, 0.6);
+            --header-bg: #3a3a3a;
+            --accent-color: #7eb3ff;
+            --success-color: #6dd89a;
+            --danger-color: #ff8787;
+            --warning-color: #ffc876;
+            --titlebar-bg: var(--card-bg);
+            --theme-chip-bg: rgba(255, 255, 255, 0.08);
+            --theme-option-border: rgba(255, 255, 255, 0.12);
+        }
+
+        body[data-theme="pixel-art"] {
+            --primary-color: #0f3460;
+            --accent-color: #e94560;
+            --accent-contrast: #ffffff;
+            --header-bg: #16213e;
+            --success-color: #4ade80;
+            --danger-color: #fb7185;
+            --warning-color: #fbbf24;
+            --bg-color: #1a1a2e;
+            --card-bg: #16213e;
+            --text-main: #eeeeee;
+            --text-secondary: #b9b9c8;
+            --border-color: #533483;
+            --shadow: 8px 8px 0 0 #e94560;
+            --radius: 0px;
+            --transition: all 0.15s steps(3);
+            --font-family: 'VT323', monospace;
+            --display-font-family: 'Press Start 2P', monospace;
+            --ui-letter-spacing: 0.04em;
+            --content-pattern:
+                linear-gradient(rgba(233, 69, 96, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(233, 69, 96, 0.08) 1px, transparent 1px);
+            --content-pattern-size: 24px 24px;
+            --header-overlay: linear-gradient(180deg, rgba(233, 69, 96, 0.18), rgba(233, 69, 96, 0));
+            --titlebar-bg: var(--header-bg);
+            --titlebar-hover-bg: var(--accent-color);
+            --panel-shadow: 8px 8px 0 0 rgba(233, 69, 96, 0.55);
+            --panel-hover-shadow: 6px 6px 0 0 var(--accent-color);
+            --theme-chip-bg: rgba(233, 69, 96, 0.16);
+            --theme-chip-color: #ffdbe2;
+            --theme-option-border: rgba(233, 69, 96, 0.3);
+        }
+
+        body.dark-mode[data-theme="pixel-art"] {
+            --primary-color: #6aa7ff;
+            --accent-color: #ff5f87;
+            --accent-contrast: #160d15;
+            --header-bg: #111827;
+            --bg-color: #090c17;
+            --card-bg: #111827;
+            --text-main: #f4f7ff;
+            --text-secondary: #9eb0d8;
+            --border-color: #2c4f90;
+            --shadow: 8px 8px 0 0 rgba(255, 95, 135, 0.45);
+            --theme-chip-bg: rgba(255, 95, 135, 0.18);
+            --theme-chip-color: #ffe6ef;
+            --theme-option-border: rgba(255, 95, 135, 0.25);
+        }
+
+        body[data-theme="art-nouveau"] {
+            --primary-color: #2d5016;
+            --accent-color: #d4af37;
+            --accent-contrast: #f8f3e8;
+            --header-bg: #f7efdb;
+            --success-color: #4a7a2e;
+            --danger-color: #a0522d;
+            --warning-color: #b8860b;
+            --bg-color: #f4f1e8;
+            --card-bg: #fbf7ef;
+            --text-main: #3a3a3a;
+            --text-secondary: #7b6b58;
+            --border-color: #cbb991;
+            --shadow: 0 12px 26px rgba(45, 80, 22, 0.14);
+            --radius: 18px;
+            --transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-family: 'Cormorant Garamond', serif;
+            --display-font-family: 'Cormorant Garamond', serif;
+            --ui-text-transform: none;
+            --ui-letter-spacing: 0.06em;
+            --content-pattern:
+                radial-gradient(circle at 12% 20%, rgba(45, 80, 22, 0.06), transparent 28%),
+                radial-gradient(circle at 88% 18%, rgba(212, 175, 55, 0.08), transparent 24%),
+                radial-gradient(circle at 50% 82%, rgba(139, 111, 71, 0.07), transparent 28%);
+            --content-pattern-size: cover;
+            --header-overlay: linear-gradient(135deg, rgba(212, 175, 55, 0.18), rgba(255, 255, 255, 0));
+            --header-shadow: inset 0 -1px 0 rgba(212, 175, 55, 0.25);
+            --titlebar-bg: #f8f1df;
+            --titlebar-hover-bg: rgba(212, 175, 55, 0.18);
+            --panel-shadow: 0 16px 32px rgba(45, 80, 22, 0.12);
+            --panel-hover-shadow: 0 18px 32px rgba(45, 80, 22, 0.16);
+            --theme-chip-bg: rgba(212, 175, 55, 0.12);
+            --theme-chip-color: #7b5d18;
+            --theme-option-border: rgba(212, 175, 55, 0.24);
+        }
+
+        body.dark-mode[data-theme="art-nouveau"] {
+            --primary-color: #d7c897;
+            --accent-color: #f2c76b;
+            --accent-contrast: #1d2418;
+            --header-bg: #20311d;
+            --bg-color: #162014;
+            --card-bg: #1f2b1b;
+            --text-main: #ece3c7;
+            --text-secondary: #c1b28a;
+            --border-color: #536c41;
+            --shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+            --theme-chip-bg: rgba(242, 199, 107, 0.14);
+            --theme-chip-color: #f7e0a7;
+            --theme-option-border: rgba(242, 199, 107, 0.22);
+        }
+
+        body[data-theme="ink-wash"] {
+            --primary-color: #1a1a1a;
+            --accent-color: #b43a32;
+            --accent-contrast: #f7f1e8;
+            --header-bg: #f4eee3;
+            --success-color: #5a7a3a;
+            --danger-color: #8b2020;
+            --warning-color: #b8860b;
+            --bg-color: #f5f0e8;
+            --card-bg: rgba(248, 243, 234, 0.96);
+            --text-main: #26231f;
+            --text-secondary: #777166;
+            --border-color: #c7c0b3;
+            --shadow: 0 12px 26px rgba(0, 0, 0, 0.08);
+            --radius: 6px;
+            --transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-family: 'Noto Serif SC', 'Songti SC', serif;
+            --display-font-family: 'Ma Shan Zheng', 'STKaiti', 'KaiTi', cursive;
+            --ui-text-transform: none;
+            --ui-letter-spacing: 0.08em;
+            --content-pattern:
+                radial-gradient(circle at 18% 20%, rgba(25, 25, 25, 0.05), transparent 18%),
+                radial-gradient(circle at 70% 18%, rgba(120, 110, 98, 0.08), transparent 20%),
+                linear-gradient(90deg, rgba(170, 160, 145, 0.06), rgba(170, 160, 145, 0) 18%),
+                repeating-linear-gradient(100deg, rgba(120, 112, 98, 0.04) 0 1px, transparent 1px 12px);
+            --content-pattern-size: cover, cover, cover, 100% 100%;
+            --header-overlay:
+                radial-gradient(circle at 16% 120%, rgba(130, 125, 115, 0.22), transparent 34%),
+                radial-gradient(circle at 78% 118%, rgba(165, 158, 146, 0.18), transparent 28%);
+            --header-shadow: inset 0 -1px 0 rgba(120, 110, 98, 0.18);
+            --titlebar-bg: #f2ebdf;
+            --titlebar-hover-bg: rgba(180, 58, 50, 0.08);
+            --panel-shadow: 0 18px 38px rgba(0, 0, 0, 0.08);
+            --panel-hover-shadow: 0 22px 42px rgba(0, 0, 0, 0.12);
+            --theme-chip-bg: rgba(180, 58, 50, 0.08);
+            --theme-chip-color: #8e3029;
+            --theme-option-border: rgba(120, 112, 98, 0.18);
+        }
+
+        body.dark-mode[data-theme="ink-wash"] {
+            --primary-color: #f0eadf;
+            --accent-color: #cf5b4f;
+            --accent-contrast: #171411;
+            --header-bg: #1d1a17;
+            --bg-color: #141210;
+            --card-bg: rgba(28, 24, 21, 0.94);
+            --text-main: #ece4d6;
+            --text-secondary: #b2a692;
+            --border-color: #4c453d;
+            --shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+            --panel-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            --panel-hover-shadow: 0 24px 46px rgba(0, 0, 0, 0.34);
+            --theme-chip-bg: rgba(207, 91, 79, 0.14);
+            --theme-chip-color: #f2c2bb;
+            --theme-option-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body[data-theme="swiss"] {
+            --primary-color: #111111;
+            --accent-color: #e30613;
+            --accent-contrast: #ffffff;
+            --header-bg: #f7f7f3;
+            --success-color: #1d8a5a;
+            --danger-color: #e30613;
+            --warning-color: #ff9f1a;
+            --bg-color: #ffffff;
+            --card-bg: #ffffff;
+            --text-main: #111111;
+            --text-secondary: #666666;
+            --border-color: #111111;
+            --shadow: 0 0 0 0 transparent;
+            --radius: 0px;
+            --transition: all 0.14s ease;
+            --font-family: "Helvetica Neue", "Arial Narrow", "Nimbus Sans", sans-serif;
+            --display-font-family: "Helvetica Neue", "Arial Narrow", "Nimbus Sans", sans-serif;
+            --ui-text-transform: none;
+            --ui-letter-spacing: 0.02em;
+            --content-pattern:
+                linear-gradient(rgba(17, 17, 17, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(17, 17, 17, 0.04) 1px, transparent 1px),
+                linear-gradient(135deg, rgba(227, 6, 19, 0.06), rgba(227, 6, 19, 0) 42%);
+            --content-pattern-size: 96px 96px, 96px 96px, cover;
+            --header-overlay: linear-gradient(90deg, rgba(227, 6, 19, 0.12), rgba(227, 6, 19, 0) 38%);
+            --header-shadow: inset 0 -1px 0 rgba(17, 17, 17, 0.1);
+            --titlebar-bg: #ffffff;
+            --titlebar-hover-bg: rgba(227, 6, 19, 0.08);
+            --panel-shadow: 0 12px 24px rgba(0, 0, 0, 0.04);
+            --panel-hover-shadow: 0 14px 28px rgba(0, 0, 0, 0.06);
+            --theme-chip-bg: rgba(227, 6, 19, 0.08);
+            --theme-chip-color: #b20510;
+            --theme-option-border: rgba(17, 17, 17, 0.18);
+        }
+
+        body.dark-mode[data-theme="swiss"] {
+            --primary-color: #f5f5f5;
+            --accent-color: #ff4d57;
+            --accent-contrast: #100809;
+            --header-bg: #0d0d0d;
+            --bg-color: #121212;
+            --card-bg: #171717;
+            --text-main: #f5f5f5;
+            --text-secondary: #a6a6a6;
+            --border-color: #d9d9d9;
+            --panel-shadow: 0 18px 36px rgba(0, 0, 0, 0.24);
+            --panel-hover-shadow: 0 20px 40px rgba(0, 0, 0, 0.28);
+            --theme-chip-bg: rgba(255, 77, 87, 0.14);
+            --theme-chip-color: #ffd4d7;
+            --theme-option-border: rgba(255, 255, 255, 0.12);
+        }
+
+        body[data-theme="vaporwave"] {
+            --primary-color: #01cdfe;
+            --accent-color: #ff71ce;
+            --accent-contrast: #180524;
+            --header-bg: rgba(42, 8, 69, 0.96);
+            --success-color: #05ffa1;
+            --danger-color: #ff5ea8;
+            --warning-color: #fffb96;
+            --bg-color: #1a0030;
+            --card-bg: rgba(42, 8, 69, 0.82);
+            --text-main: #fffb96;
+            --text-secondary: #c3a1ff;
+            --border-color: rgba(1, 205, 254, 0.34);
+            --shadow: 0 0 28px rgba(255, 113, 206, 0.2);
+            --radius: 0px;
+            --transition: all 0.28s ease-in-out;
+            --font-family: 'VT323', 'Microsoft YaHei', monospace;
+            --display-font-family: 'Outfit', 'Microsoft YaHei', sans-serif;
+            --ui-text-transform: uppercase;
+            --ui-letter-spacing: 0.14em;
+            --content-pattern:
+                linear-gradient(rgba(185, 103, 255, 0.12) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(185, 103, 255, 0.12) 1px, transparent 1px),
+                linear-gradient(180deg, rgba(26, 0, 48, 0), rgba(26, 0, 48, 0.74));
+            --content-pattern-size: 60px 60px, 60px 60px, cover;
+            --header-overlay:
+                linear-gradient(90deg, rgba(255, 113, 206, 0.24), rgba(185, 103, 255, 0.16), rgba(1, 205, 254, 0.2)),
+                repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.04) 0 2px, transparent 2px 6px);
+            --header-shadow: inset 0 -1px 0 rgba(1, 205, 254, 0.2);
+            --titlebar-bg: #22083f;
+            --titlebar-hover-bg: rgba(255, 113, 206, 0.18);
+            --panel-shadow: 0 0 26px rgba(255, 113, 206, 0.18), 0 0 44px rgba(1, 205, 254, 0.08);
+            --panel-hover-shadow: 0 0 34px rgba(255, 113, 206, 0.24), 0 0 52px rgba(1, 205, 254, 0.14);
+            --theme-chip-bg: rgba(185, 103, 255, 0.2);
+            --theme-chip-color: #fffb96;
+            --theme-option-border: rgba(185, 103, 255, 0.26);
+        }
+
+        body.dark-mode[data-theme="vaporwave"] {
+            --primary-color: #39e7ff;
+            --accent-color: #ff7fd8;
+            --accent-contrast: #16041f;
+            --header-bg: rgba(24, 2, 45, 0.98);
+            --bg-color: #0f001f;
+            --card-bg: rgba(29, 6, 50, 0.88);
+            --text-main: #fff8a7;
+            --text-secondary: #cdb3ff;
+            --border-color: rgba(1, 205, 254, 0.3);
+            --shadow: 0 0 30px rgba(255, 113, 206, 0.22);
+            --panel-shadow: 0 0 28px rgba(255, 113, 206, 0.2), 0 0 48px rgba(1, 205, 254, 0.1);
+            --panel-hover-shadow: 0 0 36px rgba(255, 113, 206, 0.26), 0 0 56px rgba(1, 205, 254, 0.14);
+            --theme-chip-bg: rgba(185, 103, 255, 0.18);
+            --theme-chip-color: #fff7b0;
+            --theme-option-border: rgba(185, 103, 255, 0.24);
+        }
+
+        body[data-theme="brutalist"] {
+            --primary-color: #111111;
+            --accent-color: #ffe500;
+            --accent-contrast: #111111;
+            --header-bg: #f7f3ec;
+            --success-color: #32b96a;
+            --danger-color: #ff5833;
+            --warning-color: #ff9f1a;
+            --bg-color: #f2ede4;
+            --card-bg: #fffaf0;
+            --text-main: #111111;
+            --text-secondary: #4f4f4f;
+            --border-color: #111111;
+            --shadow: 9px 9px 0 0 #111111;
+            --radius: 0px;
+            --transition: all 0.12s ease;
+            --font-family: 'IBM Plex Mono', 'Courier New', monospace;
+            --display-font-family: 'IBM Plex Mono', 'Courier New', monospace;
+            --ui-text-transform: none;
+            --ui-letter-spacing: 0.02em;
+            --content-pattern:
+                linear-gradient(135deg, rgba(17, 17, 17, 0.08) 0 12%, transparent 12% 50%, rgba(17, 17, 17, 0.08) 50% 62%, transparent 62% 100%),
+                linear-gradient(0deg, rgba(255, 229, 0, 0.12), rgba(255, 229, 0, 0));
+            --content-pattern-size: 120px 120px, cover;
+            --header-overlay: linear-gradient(135deg, rgba(255, 88, 51, 0.14), rgba(255, 88, 51, 0));
+            --header-shadow: inset 0 -2px 0 rgba(17, 17, 17, 0.12);
+            --titlebar-bg: #ffffff;
+            --titlebar-hover-bg: rgba(255, 229, 0, 0.24);
+            --panel-shadow: 9px 9px 0 0 rgba(17, 17, 17, 0.95);
+            --panel-hover-shadow: 11px 11px 0 0 rgba(17, 17, 17, 0.95);
+            --theme-chip-bg: rgba(255, 229, 0, 0.18);
+            --theme-chip-color: #111111;
+            --theme-option-border: rgba(17, 17, 17, 0.22);
+        }
+
+        body.dark-mode[data-theme="brutalist"] {
+            --primary-color: #ffffff;
+            --accent-color: #ff6a3d;
+            --accent-contrast: #140c08;
+            --header-bg: #111111;
+            --bg-color: #090909;
+            --card-bg: #151515;
+            --text-main: #f6f6f6;
+            --text-secondary: #bbbbbb;
+            --border-color: #f6f6f6;
+            --shadow: 9px 9px 0 0 rgba(255, 255, 255, 0.95);
+            --panel-shadow: 9px 9px 0 0 rgba(255, 255, 255, 0.9);
+            --panel-hover-shadow: 11px 11px 0 0 rgba(255, 106, 61, 0.9);
+            --theme-chip-bg: rgba(255, 106, 61, 0.18);
+            --theme-chip-color: #ffd6c9;
+            --theme-option-border: rgba(255, 255, 255, 0.18);
+        }
+
+        /* === 动画效果 === */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+                max-height: 0;
+            }
+

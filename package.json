@@ -1,0 +1,7 @@
+{
+  "name": "ProLife",
+  "version": "3.4.0-dev",
+  "description": "ProLife - 生活管理系统（模块化拆分开发版）",
+  "main": "main.js",
+  "private": true
+}

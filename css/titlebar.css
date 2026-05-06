@@ -1,0 +1,115 @@
+        }
+
+        /* Electron 环境显示标题栏并调整容器高度 */
+        body.electron-env .custom-titlebar {
+            display: flex !important;
+        }
+
+        body.electron-env .container {
+            height: calc(100vh - 45px) !important;
+        }
+
+        /* 浏览器环境容器全高 */
+        body.browser-env .container {
+            height: 100vh !important;
+        }
+
+        /* 默认容器样式（兼容无 JS 类的情况） */
+        .container {
+            height: 100vh;
+        }
+
+        .titlebar-left {
+            display: flex;
+            align-items: center;
+            padding-left: 20px;
+        }
+
+        .titlebar-title {
+            color: var(--text-main);
+            font-size: 0.75rem;
+            font-weight: 900;
+            text-transform: var(--ui-text-transform);
+            letter-spacing: var(--ui-letter-spacing);
+            font-family: var(--display-font-family);
+        }
+
+        body.dark-mode .titlebar-title {
+            color: var(--text-main);
+        }
+
+        .titlebar-controls {
+            display: flex;
+            height: 100%;
+            -webkit-app-region: no-drag;
+        }
+
+        .titlebar-btn {
+            width: 50px;
+            height: 100%;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            position: relative;
+        }
+
+        body.dark-mode .titlebar-btn {
+            color: var(--text-main);
+        }
+
+        .titlebar-btn:hover {
+            background: var(--titlebar-hover-bg);
+            color: var(--accent-contrast);
+            transform: translateY(-1px);
+        }
+
+        .titlebar-btn.close:hover {
+            background: var(--danger-color);
+            color: #fff;
+        }
+
+        .titlebar-btn i {
+            pointer-events: none;
+            font-size: 0.85rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 100%;
+            background: var(--card-bg);
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            height: calc(100vh - 45px);
+        }
+
+        /* --- 头部区域 --- */
+        header {
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--border-color);
+            background: var(--header-bg);
+            background-image: var(--header-overlay);
+            box-shadow: var(--header-shadow);
+            position: relative;
+            overflow: visible;
+            z-index: 120;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-main);
+            text-transform: var(--ui-text-transform);
