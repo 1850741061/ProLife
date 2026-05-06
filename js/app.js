@@ -42,17 +42,6 @@ function isolateLocalDataForUser(nextUserId) {
     return true;
 }
 
-function updateStats() {
-    const total = state.todos.filter(t => !t.projectId).length;
-    const completed = state.todos.filter(t => !t.projectId && t.completed).length;
-    const active = total - completed;
-    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
-    const el = (id) => document.getElementById(id);
-    if (el('statTotal')) el('statTotal').textContent = total;
-    if (el('statActive')) el('statActive').textContent = active;
-    if (el('statRate')) el('statRate').textContent = rate + '%';
-}
-
 function renderStats() { updateStats(); }
 
 function updateIdeasSidebarCount() {

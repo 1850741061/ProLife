@@ -127,6 +127,11 @@ window.confirmSaveTemplate = function () {
     showSyncToast(`模板 "${templateName}" 已保存`);
 };
 
+// 从搜索结果应用模板
+function applyTemplate(templateId) {
+    window.createFromTemplate(templateId);
+}
+
 // 从模板创建新任务
 window.createFromTemplate = function (templateId) {
     const template = state.templates.find(t => t.id === templateId);

@@ -103,11 +103,6 @@ function syncIdeaTags() {
     state.ideaTags = [...allTags].sort();
 }
 
-function updateIdeasSidebarCount() {
-    const el = document.getElementById('ideasSidebarCount');
-    if (el) el.textContent = state.ideas.length || '';
-}
-
 function getFilteredIdeas(filter, filterTag) {
     let list = [...state.ideas];
     if (filter === 'pinned') list = list.filter(i => i.pinned);
