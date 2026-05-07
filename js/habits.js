@@ -69,7 +69,7 @@ function selectHabitColor(color) {
 window.saveHabit = function () {
     const name = document.getElementById('habitNameInput').value.trim();
     if (!name) {
-        alert('请输入习惯名称');
+        showSyncToast('请输入习惯名称', 'error');
         return;
     }
 
@@ -265,8 +265,9 @@ window.editHabit = function (habitId) {
     openModal('addHabitModal');
 };
 
-window.deleteHabit = function (habitId) {
-    if (!confirm('确定要删除这个习惯吗？打卡记录也会被删除。')) return;
+window.deleteHabit = async function (habitId) {
+    const confirmed = await showConfirm('删除习惯', '确定要删除这个习惯吗？打卡记录也会被删除。');
+    if (confirmed === 0) return;
 
     // 记录删除的ID
     if (!state.deletedIds.includes(habitId)) {
@@ -278,8 +279,4 @@ window.deleteHabit = function (habitId) {
     save();
     renderHabits();
 };
-
-// --- 项目管理功能 ---
-let editingProjectId = null;
-let selectedProjectColor = '#3b82f6';
 

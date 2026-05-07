@@ -17,7 +17,7 @@ function readSettings() {
             return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
         }
     } catch(e) {}
-    return { minimizeToTray: undefined };
+    return { minimizeToTray: undefined, widgetBlurOpacity: 0.94 };
 }
 
 function writeSettings(settings) {
@@ -145,6 +145,14 @@ ipcMain.on('set-close-behavior', (e, val) => {
     settings.minimizeToTray = val;
     writeSettings(settings);
 });
+ipcMain.on('get-widget-opacity', (e) => {
+    e.reply('widget-opacity', readSettings().widgetBlurOpacity ?? 0.94);
+});
+ipcMain.on('set-widget-opacity', (e, val) => {
+    const settings = readSettings();
+    settings.widgetBlurOpacity = val;
+    writeSettings(settings);
+});
 
 ipcMain.on('launch-widget', (event) => {
     const alreadyOpen = widgetWindow && !widgetWindow.isDestroyed();
@@ -224,7 +232,8 @@ function launchWidget() {
         });
         widgetWindow.on('blur', () => {
             if (widgetWindow && !widgetWindow.isDestroyed() && widgetWindow.isAlwaysOnTop()) {
-                widgetWindow.setOpacity(0.94);
+                const settings = readSettings();
+                widgetWindow.setOpacity(settings.widgetBlurOpacity ?? 0.94);
                 widgetWindow.webContents.send('widget-blur');
             }
         });
@@ -321,10 +330,25 @@ function createMainTray() {
     });
 }
 
-app.whenReady().then(() => {
-    createWindow();
-    createMenu();
-});
+// 单实例锁：防止打开多个应用实例
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+    app.quit();
+} else {
+    app.on('second-instance', () => {
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            if (!mainWindow.isVisible()) mainWindow.show();
+            mainWindow.focus();
+        }
+    });
+
+    app.whenReady().then(() => {
+        createWindow();
+        createMenu();
+    });
+}
 
 app.on('window-all-closed', () => {
     if (isQuitting && process.platform !== 'darwin') {

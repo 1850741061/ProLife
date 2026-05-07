@@ -2,7 +2,7 @@
 
 
 window.openProjectMindmap = function (projectId) {
-    const project = state.projects.find(p => p.id == projectId);
+    const project = state.projects.find(p => String(p.id) === String(projectId));
     if (!project) return;
 
     // 确保项目有subGroups字段
@@ -35,7 +35,7 @@ window.closeMindmap = function () {
 
 // 渲染思维导图
 function renderMindmap() {
-    const project = state.projects.find(p => p.id == currentMindmapProjectId);
+    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
     if (!project) return;
 
     const canvas = document.getElementById('mindmapCanvas');
@@ -46,18 +46,18 @@ function renderMindmap() {
     svg.innerHTML = '';
 
     // 获取该项目所有任务
-    const projectTasks = state.todos.filter(t => t.projectId == project.id);
+    const projectTasks = state.todos.filter(t => String(t.projectId) === String(project.id));
 
     // 递归构建分组树
     const subGroups = project.subGroups || [];
     function buildTree(parentId) {
         const children = subGroups.filter(sg => {
             const pid = sg.parentId || null;
-            return parentId === null ? pid === null : pid == parentId;
+            return parentId === null ? pid === null : String(pid) === String(parentId);
         });
         return children.map(sg => ({
             group: sg,
-            tasks: projectTasks.filter(t => t.projectSubGroupId == sg.id),
+            tasks: projectTasks.filter(t => String(t.projectSubGroupId) === String(sg.id)),
             children: buildTree(sg.id)
         }));
     }
@@ -231,7 +231,7 @@ window.closeMmPopup = function (id) {
 window.openMmAddGroup = function (presetParentId) {
     document.getElementById('mmGroupNameInput').value = '';
     // 填充父分组下拉框
-    const project = state.projects.find(p => p.id == currentMindmapProjectId);
+    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
     const sel = document.getElementById('mmParentGroupSelect');
     sel.innerHTML = '<option value="">顶层（直属项目）</option>';
     if (project && project.subGroups) {
@@ -240,7 +240,7 @@ window.openMmAddGroup = function (presetParentId) {
             groups.forEach(sg => {
                 const prefix = '—'.repeat(depth) + ' ';
                 sel.innerHTML += `<option value="${sg.id}">${prefix}${sg.name}</option>`;
-                const children = project.subGroups.filter(c => c.parentId == sg.id);
+                const children = project.subGroups.filter(c => String(c.parentId) === String(sg.id));
                 if (children.length > 0) addOptions(children, depth + 1);
             });
         }
@@ -253,7 +253,7 @@ window.openMmAddGroup = function (presetParentId) {
 };
 
 window.confirmAddSubGroup = function () {
-    const project = state.projects.find(p => p.id == currentMindmapProjectId);
+    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
     if (!project) return;
     if (!project.subGroups) project.subGroups = [];
 
@@ -279,7 +279,7 @@ window.addProjectSubGroup = window.openMmAddGroup;
 
 // ===== 添加任务 =====
 window.openMmAddTask = function () {
-    const project = state.projects.find(p => p.id == currentMindmapProjectId);
+    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
     if (!project) return;
 
     document.getElementById('mmTaskTextInput').value = '';
@@ -298,7 +298,7 @@ window.openMmAddTask = function () {
 };
 
 window.confirmMmAddTask = function () {
-    const project = state.projects.find(p => p.id == currentMindmapProjectId);
+    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
     if (!project) return;
 
     const text = document.getElementById('mmTaskTextInput').value.trim();
@@ -338,17 +338,17 @@ window.confirmMmAddTask = function () {
 
 // ===== 任务列表弹窗 =====
 window.showMmTaskList = function () {
-    const project = state.projects.find(p => p.id == currentMindmapProjectId);
+    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
     if (!project) return;
 
-    const projectTasks = state.todos.filter(t => t.projectId == project.id);
+    const projectTasks = state.todos.filter(t => String(t.projectId) === String(project.id));
     const pending = projectTasks.filter(t => !t.completed);
     const completed = projectTasks.filter(t => t.completed);
 
     const renderItem = (t) => {
         const pColor = { low: 'var(--success-color)', medium: 'var(--warning-color)', high: 'var(--danger-color)' }[t.priority] || 'var(--warning-color)';
         const sgName = t.projectSubGroupId
-            ? ((project.subGroups || []).find(sg => sg.id == t.projectSubGroupId) || {}).name || '未分类'
+            ? ((project.subGroups || []).find(sg => String(sg.id) === String(t.projectSubGroupId)) || {}).name || '未分类'
             : '未分类';
         return `
             <div class="mm-task-item ${t.completed ? 'completed' : ''}" style="border-left-color:${pColor};">
@@ -384,24 +384,24 @@ window.mmMoveTaskToGroup = function (taskId, targetGroupId) {
 
     // 避免无意义移动
     const currentGroupId = task.projectSubGroupId || null;
-    if (currentGroupId == targetGroupId) return;
+    if (String(currentGroupId) === String(targetGroupId)) return;
 
     task.projectSubGroupId = targetGroupId ? Number(targetGroupId) : null;
     save();
     renderMindmap();
 
-    const project = state.projects.find(p => p.id == currentMindmapProjectId);
+    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
     const sgName = targetGroupId
-        ? ((project && project.subGroups || []).find(sg => sg.id == targetGroupId) || {}).name || '未分类'
+        ? ((project && project.subGroups || []).find(sg => String(sg.id) === String(targetGroupId)) || {}).name || '未分类'
         : '未分类';
     showSyncToast(`已移动到「${sgName}」`);
 };
 
 // ===== 子分组 CRUD =====
 window.editSubGroup = function (subGroupId) {
-    const project = state.projects.find(p => p.id == currentMindmapProjectId);
+    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
     if (!project) return;
-    const sg = project.subGroups.find(g => g.id == subGroupId);
+    const sg = project.subGroups.find(g => String(g.id) === String(subGroupId));
     if (!sg) return;
 
     // 复用添加分组弹窗进行编辑
@@ -425,10 +425,10 @@ window.editSubGroup = function (subGroupId) {
 };
 
 window.deleteSubGroup = async function (subGroupId) {
-    const project = state.projects.find(p => p.id == currentMindmapProjectId);
+    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
     if (!project) return;
 
-    const tasksInGroup = state.todos.filter(t => t.projectSubGroupId == subGroupId);
+    const tasksInGroup = state.todos.filter(t => String(t.projectSubGroupId) === String(subGroupId));
     if (tasksInGroup.length > 0) {
         const confirmed = await showConfirm(
             '删除分组',
@@ -440,14 +440,14 @@ window.deleteSubGroup = async function (subGroupId) {
         tasksInGroup.forEach(t => { t.projectSubGroupId = null; });
     }
 
-    project.subGroups = project.subGroups.filter(g => g.id != subGroupId);
+    project.subGroups = project.subGroups.filter(g => String(g.id) !== String(subGroupId));
     save();
     closeMmDetail();
     renderMindmap();
 };
 
 window.assignTaskToSubGroup = function (taskId, subGroupId) {
-    const task = state.todos.find(t => t.id == taskId);
+    const task = state.todos.find(t => String(t.id) === String(taskId));
     if (!task) return;
     task.projectSubGroupId = subGroupId === '__ungrouped__' ? null : subGroupId;
     save();
@@ -462,7 +462,7 @@ function closeMmDetail() {
 window.closeMmDetail = closeMmDetail;
 
 function showProjectDetail(project) {
-    const projectTasks = state.todos.filter(t => t.projectId == project.id);
+    const projectTasks = state.todos.filter(t => String(t.projectId) === String(project.id));
     const totalT = projectTasks.length;
     const completedT = projectTasks.filter(t => t.completed).length;
     const progress = totalT > 0 ? Math.round((completedT / totalT) * 100) : 0;
@@ -520,14 +520,14 @@ function showProjectDetail(project) {
 function showSubGroupDetail(project, subGroup) {
     const isUngrouped = subGroup.id === '__ungrouped__';
     const tasks = isUngrouped
-        ? state.todos.filter(t => t.projectId == project.id && (!t.projectSubGroupId || !project.subGroups.find(sg => sg.id == t.projectSubGroupId)))
-        : state.todos.filter(t => t.projectId == project.id && t.projectSubGroupId == subGroup.id);
+        ? state.todos.filter(t => String(t.projectId) === String(project.id) && (!t.projectSubGroupId || !project.subGroups.find(sg => String(sg.id) === String(t.projectSubGroupId))))
+        : state.todos.filter(t => String(t.projectId) === String(project.id) && String(t.projectSubGroupId) === String(subGroup.id));
 
     const completedCount = tasks.filter(t => t.completed).length;
 
     // 分组选择器（用于任务重新分配）
     const groupOptions = (project.subGroups || []).map(sg =>
-        `<option value="${sg.id}" ${sg.id == subGroup.id ? 'selected' : ''}>${sg.name}</option>`
+        `<option value="${sg.id}" ${String(sg.id) === String(subGroup.id) ? 'selected' : ''}>${sg.name}</option>`
     ).join('') + `<option value="__ungrouped__" ${isUngrouped ? 'selected' : ''}>未分类</option>`;
 
     document.getElementById('mmDetailContent').innerHTML = `
@@ -563,10 +563,10 @@ function showSubGroupDetail(project, subGroup) {
 }
 
 function showTaskDetail(task) {
-    const project = state.projects.find(p => p.id == currentMindmapProjectId);
+    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
     const subGroups = project ? (project.subGroups || []) : [];
     const groupOptions = subGroups.map(sg =>
-        `<option value="${sg.id}" ${sg.id == task.projectSubGroupId ? 'selected' : ''}>${sg.name}</option>`
+        `<option value="${sg.id}" ${String(sg.id) === String(task.projectSubGroupId) ? 'selected' : ''}>${sg.name}</option>`
     ).join('') + `<option value="__ungrouped__" ${!task.projectSubGroupId ? 'selected' : ''}>未分类</option>`;
 
     const pLabel = { low: '低', medium: '中', high: '高' }[task.priority] || '中';
@@ -621,8 +621,4 @@ function showTaskDetail(task) {
     `;
     document.getElementById('mmDetailPanel').classList.add('open');
 }
-
-// === 饮品（奶茶/咖啡）追踪功能 ===
-    // 当前选择的饮品类型（记录时用）
-    let currentDrinkType = 'milktea';
 

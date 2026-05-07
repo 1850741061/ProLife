@@ -1,8 +1,47 @@
 // 应用状态管理
 
+const DATA_VERSION = 1;
+const DATA_VERSION_KEY = 'dataVersion';
 
 let _idCounter = 0;
 function uniqueId() { return Date.now() * 1000 + (++_idCounter % 1000); }
+
+// 数据迁移机制
+const migrations = [];
+
+function migrateData() {
+    const currentVersion = parseInt(localStorage.getItem(DATA_VERSION_KEY) || '0', 10);
+    if (currentVersion >= DATA_VERSION) return;
+
+    for (let v = currentVersion; v < DATA_VERSION; v++) {
+        if (migrations[v]) migrations[v]();
+    }
+    localStorage.setItem(DATA_VERSION_KEY, String(DATA_VERSION));
+}
+
+// 示例迁移：v0 → v1 确保所有 ID 都是字符串
+migrations[0] = function () {
+    console.log('[migration] v0 → v1: normalizing IDs to strings');
+    const ensureStringIds = (arr) => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach(item => {
+            if (item && item.id != null) item.id = String(item.id);
+        });
+    };
+    ['todos', 'groups', 'templates', 'archivedTodos', 'habits', 'projects', 'dailyPlans'].forEach(key => {
+        try { ensureStringIds(JSON.parse(localStorage.getItem(key) || '[]')); } catch (e) {}
+    });
+    // 写回
+    ['todos', 'groups', 'templates', 'archivedTodos', 'habits', 'projects', 'dailyPlans'].forEach(key => {
+        try {
+            const data = JSON.parse(localStorage.getItem(key) || '[]');
+            localStorage.setItem(key, JSON.stringify(data));
+        } catch (e) {}
+    });
+};
+
+// 启动前先迁移
+migrateData();
 
 const state = {
     todos: JSON.parse(localStorage.getItem('todos')) || [],

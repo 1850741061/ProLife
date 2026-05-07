@@ -376,7 +376,7 @@ function renderProjectStatsList() {
     }
 
     state.projects.forEach(project => {
-        const projectTasks = state.todos.filter(t => t.projectId == project.id);
+        const projectTasks = state.todos.filter(t => String(t.projectId) === String(project.id));
         const total = projectTasks.length;
         const completed = projectTasks.filter(t => t.completed).length;
         const inProgress = total - completed;
@@ -458,7 +458,7 @@ function renderProjectPieChart(project) {
 
     const ctx = canvas.getContext('2d');
     const chartTheme = getChartThemeTokens();
-    const projectTasks = state.todos.filter(t => t.projectId == project.id);
+    const projectTasks = state.todos.filter(t => String(t.projectId) === String(project.id));
     const completed = projectTasks.filter(t => t.completed).length;
     const inProgress = projectTasks.length - completed;
 
@@ -515,10 +515,3 @@ function calculateHabitStreak(habitId) {
     return streak;
 }
 
-// ========== 番茄钟功能 ==========
-let pomodoroTimer = null;
-let pomodoroSeconds = 25 * 60; // 25分钟
-let pomodoroIsRunning = false;
-let pomodoroIsWorkMode = true; // true=工作, false=休息
-
-// 初始化番茄钟

@@ -440,6 +440,15 @@ async function signOut() {
         localStorage.removeItem('refresh_token');
         // 登出时保留记住的账号信息，方便下次登录
 
+        // 清理 Supabase SDK 自己的 session
+        try {
+            if (supabaseClient && supabaseClient.auth) {
+                await supabaseClient.auth.signOut();
+            }
+        } catch (e) {
+            console.warn('[登出] Supabase signOut 失败（非致命）:', e);
+        }
+
         console.log('[登出] 已清理登录状态');
 
         // 刷新页面
@@ -771,20 +780,19 @@ function unsubscribeToRealtime() {
 function save() {
     state.transactions = dedupeFinanceTransactions(state.transactions);
 
-    // 更新 updatedAt 时间戳
-    const now = new Date().toISOString();
-    state.todos.forEach(t => t.updatedAt = now);
-    state.groups.forEach(g => g.updatedAt = now);
-    state.transactions.forEach(t => t.updatedAt = now);
-    state.projects.forEach(p => p.updatedAt = now);  // 添加项目时间戳更新
-
     // 立即保存到本地
     baseSave();
 
-    // 云同步（立即上传，无防抖）
+    // 发布数据变更通知
+    publish('data-changed', state);
+
+    // 云同步（带防抖）
     if (currentUser) {
-        console.log('[自动同步] 上传数据到云端...');
-        syncToCloud();
+        clearTimeout(save._debounceTimer);
+        save._debounceTimer = setTimeout(() => {
+            console.log('[自动同步] 上传数据到云端...');
+            syncToCloud();
+        }, 500);
     }
 }
 
@@ -1270,9 +1278,12 @@ function updateCloudStatus() {
 }
 
 // 云同步按钮点击
-document.getElementById('cloudSyncBtn').onclick = () => {
+document.getElementById('cloudSyncBtn').onclick = async () => {
     if (currentUser) {
-        if (confirm('当前已登录，是否退出？')) signOut();
+        const confirmed = await showConfirm('退出登录', '当前已登录，是否退出？');
+        if (confirmed === 1) {
+            await signOut();
+        }
     } else {
         openAuthModal();
     }
@@ -1301,7 +1312,15 @@ document.getElementById('refreshBtn').onclick = () => {
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.8rem;">
                 <input type="checkbox" id="settingMinimizeToTray" style="width:16px;height:16px;accent-color:var(--accent-color);">
                 关闭时最小化到托盘
-            </label>`;
+            </label>
+            <div id="widgetOpacitySetting" style="margin-top:10px;">
+                <div style="font-weight:700;font-size:0.8rem;margin-bottom:6px;">小组件失焦透明度</div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="range" id="settingWidgetOpacity" min="0.1" max="1" step="0.02" value="0.94"
+                           style="flex:1;accent-color:var(--accent-color);">
+                    <span id="widgetOpacityValue" style="font-size:0.8rem;font-weight:700;min-width:35px;text-align:right;">94%</span>
+                </div>
+            </div>`;
         btn.parentElement.style.position = 'relative';
         btn.parentElement.appendChild(panel);
     }
@@ -1321,6 +1340,22 @@ document.getElementById('refreshBtn').onclick = () => {
         document.getElementById('settingMinimizeToTray').addEventListener('change', (e) => {
             _ipcSettings.send('set-close-behavior', e.target.checked);
         });
+
+        // Widget opacity setting
+        const opacitySlider = document.getElementById('settingWidgetOpacity');
+        const opacityValue = document.getElementById('widgetOpacityValue');
+        if (opacitySlider && opacityValue) {
+            _ipcSettings.send('get-widget-opacity');
+            _ipcSettings.on('widget-opacity', (_, val) => {
+                opacitySlider.value = val;
+                opacityValue.textContent = Math.round(val * 100) + '%';
+            });
+            opacitySlider.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                opacityValue.textContent = Math.round(val * 100) + '%';
+                _ipcSettings.send('set-widget-opacity', val);
+            });
+        }
 
         // 关闭行为选择对话框
         const closeDialog = document.getElementById('closeBehaviorDialog');

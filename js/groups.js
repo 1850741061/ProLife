@@ -38,7 +38,7 @@ window.openEditGroupModal = (id) => {
 
 window.saveGroup = () => {
     const name = document.getElementById('groupNameInput').value.trim();
-    if (!name) return alert('名称不能为空');
+    if (!name) return showSyncToast('名称不能为空', 'error');
     const color = colors[state.selectedColorIndex];
 
     if (state.editingGroupId) {
@@ -53,8 +53,9 @@ window.saveGroup = () => {
     renderTodos();
 };
 
-window.deleteGroup = (id) => {
-    if (!confirm('删除分组将删除所有任务，确定？')) return;
+window.deleteGroup = async (id) => {
+    const confirmed = await showConfirm('删除分组', '删除分组将删除所有任务，确定？');
+    if (confirmed === 0) return;
     // 记录分组下任务的删除ID
     const tasksToDelete = state.todos.filter(t => t.groupId === id);
     tasksToDelete.forEach(t => {
@@ -132,7 +133,7 @@ function renderSidebarProjects() {
 
     state.projects.forEach((p) => {
         const li = document.createElement('li');
-        li.className = `group-item ${state.currentProjectId == p.id ? 'active' : ''}`;  // 使用 == 比较
+        li.className = `group-item ${String(state.currentProjectId) === String(p.id) ? 'active' : ''}`;
         li.innerHTML = `
             <div class="group-name">
                 <i class="fas fa-project-diagram" style="margin-right: 8px; color: ${p.color};"></i>
@@ -145,7 +146,7 @@ function renderSidebarProjects() {
 }
 
 window.selectProject = (id) => {
-    const project = state.projects.find(p => p.id == id);  // 使用 == 比较
+    const project = state.projects.find(p => String(p.id) === String(id));
     if (!project) return;
 
     // 点击项目时，清除分组选择（包括"全部任务"）

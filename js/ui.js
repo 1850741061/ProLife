@@ -314,7 +314,7 @@ function updateInputSectionVisibility() {
 
     // 根据当前选择过滤任务
     if (state.currentProjectId) {
-        list = list.filter(t => t.projectId == state.currentProjectId);  // 使用 == 比较
+        list = list.filter(t => String(t.projectId) === String(state.currentProjectId));
     } else if (state.currentGroupId && state.currentGroupId !== 'all') {
         list = list.filter(t => t.groupId === state.currentGroupId && !t.projectId);
     } else {

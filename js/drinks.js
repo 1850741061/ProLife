@@ -1,5 +1,6 @@
 // 奶茶/咖啡摄入追踪
 
+let currentDrinkType = 'milktea';
 
     window.selectDrinkType = function(type) {
         currentDrinkType = type;

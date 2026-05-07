@@ -1,5 +1,9 @@
 // 番茄钟
 
+let pomodoroTimer = null;
+let pomodoroSeconds = 25 * 60;
+let pomodoroIsRunning = false;
+let pomodoroIsWorkMode = true;
 
 function initPomodoro() {
     document.getElementById('pomodoroBtn').onclick = () => {
@@ -87,5 +91,3 @@ function showNotification(title, body) {
         });
     }
 }
-
-// ========== 键盘快捷键 ==========

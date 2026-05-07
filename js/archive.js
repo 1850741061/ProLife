@@ -14,13 +14,14 @@ function openArchiveModal() {
 }
 
 // 批量归档选中的任务
-window.batchArchiveTodos = function () {
+window.batchArchiveTodos = async function () {
     if (state.selectedTodos.size === 0) {
-        alert('请先选择要归档的任务');
+        showSyncToast('请先选择要归档的任务', 'error');
         return;
     }
 
-    if (!confirm(`确定要将选中的 ${state.selectedTodos.size} 个任务归档吗？`)) return;
+    const confirmed = await showConfirm('批量归档', `确定要将选中的 ${state.selectedTodos.size} 个任务归档吗？`);
+    if (confirmed === 0) return;
 
     // 将选中的任务移到归档
     const tasksToArchive = state.todos.filter(t => state.selectedTodos.has(t.id));
@@ -44,7 +45,7 @@ window.batchArchiveTodos = function () {
     document.getElementById('batchModeBtn').style.background = '';
     document.getElementById('batchToolbar').style.display = 'none';
 
-    alert(`已归档 ${tasksToArchive.length} 个任务`);
+    showSyncToast(`已归档 ${tasksToArchive.length} 个任务`);
 };
 
 // 渲染归档任务列表
@@ -180,13 +181,14 @@ window.restoreTodo = function (id) {
 };
 
 // 批量恢复归档任务
-window.batchRestoreArchived = function () {
+window.batchRestoreArchived = async function () {
     if (selectedArchivedTodos.size === 0) {
-        alert('请先选择要恢复的任务');
+        showSyncToast('请先选择要恢复的任务', 'error');
         return;
     }
 
-    if (!confirm(`确定要恢复选中的 ${selectedArchivedTodos.size} 个任务吗？`)) return;
+    const confirmed = await showConfirm('批量恢复', `确定要恢复选中的 ${selectedArchivedTodos.size} 个任务吗？`);
+    if (confirmed === 0) return;
 
     const todosToRestore = state.archivedTodos.filter(t => selectedArchivedTodos.has(t.id));
     todosToRestore.forEach(todo => {
@@ -202,7 +204,7 @@ window.batchRestoreArchived = function () {
     renderArchiveList();
     renderStats();
 
-    alert(`已恢复 ${todosToRestore.length} 个任务`);
+    showSyncToast(`已恢复 ${todosToRestore.length} 个任务`);
 };
 
 // 删除单个归档任务
@@ -231,7 +233,7 @@ window.deleteArchivedTodo = async function (id) {
 // 批量删除归档任务
 window.batchDeleteArchived = async function () {
     if (selectedArchivedTodos.size === 0) {
-        alert('请先选择要删除的任务');
+        showSyncToast('请先选择要删除的任务', 'error');
         return;
     }
 

@@ -386,7 +386,7 @@ window.addTransaction = () => {
     const amt = document.getElementById('transAmount').value;
     const note = document.getElementById('transNote').value.trim();
 
-    if (!cat || !amt || !date) return alert('请填写完整');
+    if (!cat || !amt || !date) return showSyncToast('请填写完整', 'error');
 
     // 获取对应颜色
     const catObj = getAllCategories().find(c => c.name === cat);
@@ -423,7 +423,7 @@ window.saveEditTransaction = () => {
     const amount = document.getElementById('editTransAmount').value;
     const note = document.getElementById('editTransNote').value.trim();
 
-    if (!category || !amount || !date) return alert('请填写完整');
+    if (!category || !amount || !date) return showSyncToast('请填写完整', 'error');
 
     // 更新颜色
     const catObj = getAllCategories().find(c => c.name === category);
@@ -438,8 +438,9 @@ window.saveEditTransaction = () => {
     renderFinance();
 };
 
-window.deleteEditTransaction = () => {
-    if (!confirm('确定删除此记录？')) return;
+window.deleteEditTransaction = async () => {
+    const confirmed = await showConfirm('删除记录', '确定删除此记录？');
+    if (confirmed === 0) return;
     // 记录删除ID
     if (!state.deletedIds.some(id => sameFinanceTransactionId(id, state.editingTransId) || id === state.editingTransId)) {
         state.deletedIds.push(state.editingTransId);
@@ -529,7 +530,7 @@ function renderExpensePieChart(catStats) {
             path.setAttribute('transform', 'scale(1)');
         });
         path.addEventListener('click', () => {
-            alert(`${cat}: ¥${stats.expense.toFixed(2)} (${(percent * 100).toFixed(1)}%)`);
+            showConfirm(cat, `支出：¥${stats.expense.toFixed(2)}\n占比：${(percent * 100).toFixed(1)}%`, ['确定']);
         });
 
         svg.appendChild(path);
@@ -556,7 +557,7 @@ function renderExpensePieChart(catStats) {
             legendItem.style.boxShadow = 'none';
         });
         legendItem.addEventListener('click', () => {
-            alert(`${cat}: ¥${stats.expense.toFixed(2)} (${(percent * 100).toFixed(1)}%)`);
+            showConfirm(cat, `支出：¥${stats.expense.toFixed(2)}\n占比：${(percent * 100).toFixed(1)}%`, ['确定']);
         });
 
         legendItem.innerHTML = `
@@ -697,14 +698,14 @@ window.addNewCategory = () => {
     const icon = document.getElementById('newCategoryIcon').value;
 
     if (!name) {
-        alert('请输入分类名称');
+        showSyncToast('请输入分类名称', 'error');
         return;
     }
 
     // 检查是否重名
     const categories = financeCats[currentCategoryManagerType];
     if (categories.some(cat => cat.name === name)) {
-        alert('分类名称已存在');
+        showSyncToast('分类名称已存在', 'error');
         return;
     }
 
@@ -729,16 +730,17 @@ window.addNewCategory = () => {
 };
 
 // 删除分类
-window.deleteCategory = (index) => {
+window.deleteCategory = async (index) => {
     const categories = financeCats[currentCategoryManagerType];
     const cat = categories[index];
 
     if (categories.length <= 1) {
-        alert('至少需要保留一个分类');
+        showSyncToast('至少需要保留一个分类', 'error');
         return;
     }
 
-    if (!confirm(`确定删除"${cat.name}"分类吗？`)) {
+    const confirmed = await showConfirm('删除分类', `确定删除"${cat.name}"分类吗？`);
+    if (confirmed === 0) {
         return;
     }
 
@@ -751,8 +753,9 @@ window.deleteCategory = (index) => {
 };
 
 // 恢复默认分类
-window.resetCategoriesToDefault = () => {
-    if (!confirm('确定要恢复默认分类吗？这将删除所有自定义分类。')) {
+window.resetCategoriesToDefault = async () => {
+    const confirmed = await showConfirm('恢复默认分类', '确定要恢复默认分类吗？这将删除所有自定义分类。');
+    if (confirmed === 0) {
         return;
     }
 

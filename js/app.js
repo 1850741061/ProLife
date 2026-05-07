@@ -76,7 +76,7 @@ window.launchWidget = function() {
             }
         });
     } else {
-        alert('桌面小组件仅在 Electron 桌面版中可用');
+        showSyncToast('桌面小组件仅在 Electron 桌面版中可用', 'error');
     }
 };
 
@@ -126,7 +126,7 @@ if (typeof require !== 'undefined') {
     ipcR.on('open-project-task-detail', (event, { projectId, taskId }) => {
         if (typeof window.openProjectMindmap === 'function') window.openProjectMindmap(projectId);
         setTimeout(() => {
-            const task = state.todos.find(t => t.id == taskId);
+            const task = state.todos.find(t => String(t.id) === String(taskId));
             if (task && typeof window.showTaskDetail === 'function') window.showTaskDetail(task);
         }, 400);
     });

@@ -75,7 +75,7 @@ function renderTemplateList() {
 // 保存当前编辑任务为模板（打开输入模态框）
 window.saveAsTemplate = function () {
     if (!state.editingId) {
-        alert('请先编辑一个任务');
+        showSyncToast('请先编辑一个任务', 'error');
         return;
     }
 
@@ -98,7 +98,7 @@ window.confirmSaveTemplate = function () {
     const templateName = document.getElementById('templateNameInput').value.trim();
 
     if (!templateName) {
-        alert('请输入模板名称');
+        showSyncToast('请输入模板名称', 'error');
         return;
     }
 
@@ -168,11 +168,12 @@ window.createFromTemplate = function (templateId) {
 };
 
 // 删除模板
-window.deleteTemplate = function (templateId) {
+window.deleteTemplate = async function (templateId) {
     const template = state.templates.find(t => t.id === templateId);
     if (!template) return;
 
-    if (!confirm(`确定删除模板 "${template.text}"？`)) return;
+    const confirmed = await showConfirm('删除模板', `确定删除模板 "${template.text}"？`);
+    if (confirmed === 0) return;
 
     // 记录删除ID
     if (!state.deletedIds.includes(templateId)) {
@@ -186,16 +187,17 @@ window.deleteTemplate = function (templateId) {
 
 // 显示模板详情
 function showTemplateDetail(template) {
-    const detail = `
-模板名称：${template.text}
-优先级：${pMap[template.priority] || '中'}
-分组：${template.groupName}
-${template.startTime || template.endTime ? `时间段：${template.startTime || '--'} - ${template.endTime || '--'}` : ''}
-${template.notes ? `\n备注：${template.notes}` : ''}
-${template.subtasks && template.subtasks.length > 0 ? `\n子任务 (${template.subtasks.length})：\n${template.subtasks.map(st => '  - ' + st.text).join('\n')}` : ''}
-    `.trim();
-
-    alert(detail);
+    let lines = [];
+    lines.push(`模板名称：${template.text}`);
+    lines.push(`优先级：${pMap[template.priority] || '中'}`);
+    lines.push(`分组：${template.groupName}`);
+    if (template.startTime || template.endTime) lines.push(`时间段：${template.startTime || '--'} - ${template.endTime || '--'}`);
+    if (template.notes) lines.push(`备注：${template.notes}`);
+    if (template.subtasks && template.subtasks.length > 0) {
+        lines.push(`子任务 (${template.subtasks.length})：`);
+        template.subtasks.forEach(st => lines.push('  - ' + st.text));
+    }
+    showConfirm('模板详情', lines.join('\n'));
 }
 
 // ========== 数据统计功能 ==========

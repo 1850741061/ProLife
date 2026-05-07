@@ -186,57 +186,20 @@ function renderGlobalSearchResults(results, query) {
     const container = document.getElementById('globalSearchResults');
     let html = '';
 
-    // 渲染任务结果
-    if (results.todos.length > 0) {
-        html += `
-            <div style="margin-bottom: 25px;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 3px solid var(--border-color);">
-                    <i class="fas fa-tasks" style="color: var(--accent-color); font-size: 1.2rem;"></i>
-                    <h3 style="margin: 0; font-size: 1.1rem;">任务 (${results.todos.length})</h3>
-                </div>
-                ${results.todos.map(item => createSearchResultItem(item, query)).join('')}
+    const sectionTemplate = (icon, color, title, items, query) => `
+        <div class="mb-25">
+            <div class="section-header">
+                <i class="fas ${icon}" style="color: ${color}; font-size: 1.2rem;"></i>
+                <h3 style="margin: 0;" class="fs-lg">${title} (${items.length})</h3>
             </div>
-        `;
-    }
+            ${items.map(item => createSearchResultItem(item, query)).join('')}
+        </div>
+    `;
 
-    // 渲染记账结果
-    if (results.transactions.length > 0) {
-        html += `
-            <div style="margin-bottom: 25px;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 3px solid var(--border-color);">
-                    <i class="fas fa-wallet" style="color: var(--success-color); font-size: 1.2rem;"></i>
-                    <h3 style="margin: 0; font-size: 1.1rem;">记账 (${results.transactions.length})</h3>
-                </div>
-                ${results.transactions.map(item => createSearchResultItem(item, query)).join('')}
-            </div>
-        `;
-    }
-
-    // 渲染模板结果
-    if (results.templates.length > 0) {
-        html += `
-            <div style="margin-bottom: 25px;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 3px solid var(--border-color);">
-                    <i class="fas fa-clone" style="color: var(--warning-color); font-size: 1.2rem;"></i>
-                    <h3 style="margin: 0; font-size: 1.1rem;">模板 (${results.templates.length})</h3>
-                </div>
-                ${results.templates.map(item => createSearchResultItem(item, query)).join('')}
-            </div>
-        `;
-    }
-
-    // 渲染项目结果
-    if (results.projects.length > 0) {
-        html += `
-            <div style="margin-bottom: 25px;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 3px solid var(--border-color);">
-                    <i class="fas fa-project-diagram" style="color: #8b5cf6; font-size: 1.2rem;"></i>
-                    <h3 style="margin: 0; font-size: 1.1rem;">项目 (${results.projects.length})</h3>
-                </div>
-                ${results.projects.map(item => createSearchResultItem(item, query)).join('')}
-            </div>
-        `;
-    }
+    if (results.todos.length > 0) html += sectionTemplate('fa-tasks', 'var(--accent-color)', '任务', results.todos, query);
+    if (results.transactions.length > 0) html += sectionTemplate('fa-wallet', 'var(--success-color)', '记账', results.transactions, query);
+    if (results.templates.length > 0) html += sectionTemplate('fa-clone', 'var(--warning-color)', '模板', results.templates, query);
+    if (results.projects.length > 0) html += sectionTemplate('fa-project-diagram', '#8b5cf6', '项目', results.projects, query);
 
     container.innerHTML = html;
 }
@@ -253,17 +216,14 @@ function createSearchResultItem(item, query) {
     return `
         <div class="search-result-item"
              data-type="${item.type}"
-             data-id="${item.id}"
-             style="padding: 12px 15px; margin-bottom: 10px; background: var(--card-bg); border: 3px solid var(--border-color); border-radius: var(--radius); cursor: pointer; transition: var(--transition); display: flex; align-items: flex-start; gap: 12px;"
-             onmouseover="this.style.transform = 'translate(-2px, -2px)'; this.style.boxShadow = 'var(--shadow)';"
-             onmouseout="this.style.transform = ''; this.style.boxShadow = '';">
+             data-id="${item.id}">
             <i class="fas ${item.icon}" style="color: ${item.color}; font-size: 1.3rem; margin-top: 2px;"></i>
-            <div style="flex: 1; min-width: 0;">
-                <div style="font-weight: 600; font-size: 1rem; margin-bottom: 4px; word-break: break-word;">${highlightText(item.title)}</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 4px;">${item.subtitle}</div>
-                ${item.notes ? `<div style="font-size: 0.85rem; color: var(--text-secondary); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${highlightText(item.notes)}</div>` : ''}
+            <div class="flex-1">
+                <div class="fw-600 mb-5 word-break">${highlightText(item.title)}</div>
+                <div class="fs-sm text-secondary mb-5">${item.subtitle}</div>
+                ${item.notes ? `<div class="fs-sm text-secondary italic ellipsis">${highlightText(item.notes)}</div>` : ''}
             </div>
-            <i class="fas fa-chevron-right" style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 5px;"></i>
+            <i class="fas fa-chevron-right text-secondary" style="font-size: 0.9rem; margin-top: 5px;"></i>
         </div>
     `;
 }

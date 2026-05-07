@@ -19,6 +19,7 @@
 
     <!-- CSS -->
     <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/utilities.css">
 </head>
 
 <body>
@@ -2040,7 +2041,9 @@
     </div>
 
 
-    <!-- JS: regular script tags in dependency order -->
+    <!-- JS: Vite bundled entry (only used by Vite dev server) -->
+    <script type="module" src="/src/entry.js"></script>
+    <!-- JS: Synchronous script tags (used by Electron / direct file access) -->
     <script src="./js/config.js"></script>
     <script src="./js/state.js"></script>
     <script src="./js/utils.js"></script>
@@ -2070,9 +2073,8 @@
     <script src="./js/drinks.js"></script>
     <script src="./js/daily-plans.js"></script>
     <script src="./js/import-export.js"></script>
-    <!-- app.js loaded before sync.js: sync.js needs isolateLocalDataForUser, renderAll -->
     <script src="./js/app.js"></script>
-    <!-- Supabase SDK: 同步加载确保 checkAuthStatus 执行前已可用 -->
+    <script src="./js/pubsub.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./js/sync.js"></script>
     <!-- Service Worker Registration -->

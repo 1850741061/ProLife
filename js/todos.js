@@ -39,7 +39,7 @@ function addTodo() {
 
     // 根据选择的类型设置分组或项目信息
     if (categoryType === 'project' && categoryId) {
-        const project = state.projects.find(p => p.id == categoryId);  // 使用 == 比较
+        const project = state.projects.find(p => String(p.id) === String(categoryId));
         console.log('[addTodo] 找到项目:', project);
         if (project) {
             newTask.projectId = String(project.id);
@@ -48,7 +48,7 @@ function addTodo() {
             console.log('[addTodo] 设置项目信息:', newTask.projectId, newTask.projectName);
         }
     } else if (categoryType === 'group' && categoryId) {
-        const group = state.groups.find(g => g.id == categoryId);  // 使用 == 比较
+        const group = state.groups.find(g => String(g.id) === String(categoryId));
         if (group) {
             newTask.groupId = group.id;
             newTask.groupName = group.name;
@@ -57,7 +57,7 @@ function addTodo() {
     } else {
         // 如果当前在项目视图，默认使用当前项目
         if (state.currentProjectId) {
-            const currentProject = state.projects.find(p => p.id == state.currentProjectId);
+            const currentProject = state.projects.find(p => String(p.id) === String(state.currentProjectId));
             if (currentProject) {
                 newTask.projectId = String(currentProject.id);
                 newTask.projectName = currentProject.name;
@@ -262,7 +262,7 @@ function renderTodos() {
 
     // 项目视图：显示该项目的所有任务
     if (state.currentProjectId) {
-        list = list.filter(t => t.projectId == state.currentProjectId);  // 使用 == 比较
+        list = list.filter(t => String(t.projectId) === String(state.currentProjectId));
     } else if (state.currentGroupId && state.currentGroupId !== 'all') {
         // 分组视图：只显示该分组且不属于项目的任务
         list = list.filter(t => t.groupId === state.currentGroupId && !t.projectId);
@@ -462,6 +462,21 @@ window.selectTodayFilter = () => {
 
 window.selectOverdueFilter = () => { selectTodayFilter(); };
 
+function highlightCurrentGroup() {
+    if (state.currentGroupId === 'all') {
+        const allTasksItem = document.querySelector('.group-item[onclick*="selectGroup(\'all\'"]');
+        if (allTasksItem) allTasksItem.classList.add('active');
+    } else {
+        document.querySelectorAll('.group-item').forEach(el => {
+            const onclick = el.getAttribute('onclick') || '';
+            if (onclick.includes(`selectGroup('${state.currentGroupId}')`) ||
+                onclick.includes(`selectGroup("${state.currentGroupId}")`)) {
+                el.classList.add('active');
+            }
+        });
+    }
+}
+
 function updateTodoFilterUI() {
     const isTodayView = state.filter === 'today';
 
@@ -495,55 +510,11 @@ function updateTodoFilterUI() {
         el.classList.remove('active');
     });
 
-    if (state.filter === 'all') {
-        allBtn.style.background = 'var(--accent-color)';
-        // 高亮当前选中的分组（可能是"全部任务"或其他分组）
-        if (state.currentGroupId === 'all') {
-            const allTasksItem = document.querySelector('.group-item[onclick*="selectGroup(\'all\'"]');
-            if (allTasksItem) allTasksItem.classList.add('active');
-        } else {
-            // 找到并高亮选中的分组
-            const groupItems = document.querySelectorAll('.group-item');
-            groupItems.forEach(el => {
-                const onclick = el.getAttribute('onclick') || '';
-                if (onclick.includes(`selectGroup('${state.currentGroupId}')`) ||
-                    onclick.includes(`selectGroup("${state.currentGroupId}")`)) {
-                    el.classList.add('active');
-                }
-            });
-        }
-    } else if (state.filter === 'active') {
-        activeBtn.style.background = 'var(--accent-color)';
-        // 高亮当前选中的分组
-        if (state.currentGroupId === 'all') {
-            const allTasksItem = document.querySelector('.group-item[onclick*="selectGroup(\'all\'"]');
-            if (allTasksItem) allTasksItem.classList.add('active');
-        } else {
-            const groupItems = document.querySelectorAll('.group-item');
-            groupItems.forEach(el => {
-                const onclick = el.getAttribute('onclick') || '';
-                if (onclick.includes(`selectGroup('${state.currentGroupId}')`) ||
-                    onclick.includes(`selectGroup("${state.currentGroupId}")`)) {
-                    el.classList.add('active');
-                }
-            });
-        }
-    } else if (state.filter === 'completed') {
-        completedBtn.style.background = 'var(--accent-color)';
-        // 高亮当前选中的分组
-        if (state.currentGroupId === 'all') {
-            const allTasksItem = document.querySelector('.group-item[onclick*="selectGroup(\'all\'"]');
-            if (allTasksItem) allTasksItem.classList.add('active');
-        } else {
-            const groupItems = document.querySelectorAll('.group-item');
-            groupItems.forEach(el => {
-                const onclick = el.getAttribute('onclick') || '';
-                if (onclick.includes(`selectGroup('${state.currentGroupId}')`) ||
-                    onclick.includes(`selectGroup("${state.currentGroupId}")`)) {
-                    el.classList.add('active');
-                }
-            });
-        }
+    const filterBtnMap = { all: allBtn, active: activeBtn, completed: completedBtn };
+    const activeFilterBtn = filterBtnMap[state.filter];
+    if (activeFilterBtn) {
+        activeFilterBtn.style.background = 'var(--accent-color)';
+        highlightCurrentGroup();
     } else if (state.filter === 'today') {
         if (todayBtn) todayBtn.style.background = 'var(--warning-color)';
         if (sidebarTodayBtn) sidebarTodayBtn.classList.add('active');
@@ -978,14 +949,14 @@ window.saveEditTask = () => {
     let finalProjectColor = null;
 
     if (categoryType === 'project' && categoryId) {
-        const project = state.projects.find(p => p.id == categoryId);
+        const project = state.projects.find(p => String(p.id) === String(categoryId));
         if (project) {
             finalProjectId = String(project.id);  // 转为字符串
             finalProjectName = project.name;
             finalProjectColor = project.color;
         }
     } else if (categoryType === 'group' && categoryId) {
-        const group = state.groups.find(g => g.id == categoryId);
+        const group = state.groups.find(g => String(g.id) === String(categoryId));
         if (group) {
             finalGroupId = group.id;
             finalGroupName = group.name;
@@ -1022,8 +993,9 @@ window.saveEditTask = () => {
     renderProjects(); // 更新项目统计
 };
 
-window.clearCompleted = () => {
-    if (!confirm('清除已完成？')) return;
+window.clearCompleted = async () => {
+    const confirmed = await showConfirm('清除已完成任务', '确定要清除所有已完成的任务吗？');
+    if (confirmed === 0) return;
     state.todos = state.todos.filter(t => !t.completed);
     save(); renderTodos();
 };
@@ -1207,7 +1179,7 @@ function updateStats() {
     // 根据当前选择过滤任务
     if (state.currentProjectId) {
         // 项目视图：显示该项目的统计
-        list = list.filter(t => t.projectId == state.currentProjectId);  // 使用 == 比较
+        list = list.filter(t => String(t.projectId) === String(state.currentProjectId));
     } else if (state.currentGroupId && state.currentGroupId !== 'all') {
         // 分组视图：只显示该分组且不属于项目的任务
         list = list.filter(t => t.groupId === state.currentGroupId && !t.projectId);
@@ -1248,7 +1220,7 @@ function renderKanban() {
 
     // 根据当前视图过滤：项目视图或分组视图
     if (state.currentProjectId) {
-        list = list.filter(t => t.projectId == state.currentProjectId);
+        list = list.filter(t => String(t.projectId) === String(state.currentProjectId));
     } else if (state.currentGroupId !== 'all') {
         list = list.filter(t => t.groupId === state.currentGroupId && !t.projectId);
     } else {

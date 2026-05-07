@@ -497,13 +497,14 @@ function importData() {
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
             try {
                 const data = JSON.parse(event.target.result);
 
                 // 验证数据格式
                 if (data.todos && data.transactions && data.groups) {
-                    if (confirm('导入将覆盖现有数据，是否继续？')) {
+                    const confirmed = await showConfirm('导入数据', '导入将覆盖现有数据，是否继续？');
+                    if (confirmed === 1) {
                         state.todos = data.todos;
                         state.transactions = data.transactions;
                         state.groups = data.groups;
@@ -513,10 +514,10 @@ function importData() {
                         showSyncToast('数据导入成功！');
                     }
                 } else {
-                    alert('文件格式不正确');
+                    showSyncToast('文件格式不正确', 'error');
                 }
             } catch (err) {
-                alert('文件解析失败：' + err.message);
+                showSyncToast('文件解析失败：' + err.message, 'error');
             }
         };
         reader.readAsText(file);

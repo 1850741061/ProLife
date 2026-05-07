@@ -63,7 +63,7 @@ window.deselectAllTodos = () => {
 // 批量完成
 window.batchCompleteTodos = () => {
     if (state.selectedTodos.size === 0) {
-        alert('请先选择任务');
+        showSyncToast('请先选择任务', 'error');
         return;
     }
 
@@ -80,7 +80,7 @@ window.batchCompleteTodos = () => {
 // 批量删除
 window.batchDeleteTodos = async () => {
     if (state.selectedTodos.size === 0) {
-        alert('请先选择任务');
+        showSyncToast('请先选择任务', 'error');
         return;
     }
 
@@ -108,7 +108,7 @@ window.batchDeleteTodos = async () => {
 // 批量移动分组
 window.batchMoveTodos = () => {
     if (state.selectedTodos.size === 0) {
-        alert('请先选择任务');
+        showSyncToast('请先选择任务', 'error');
         return;
     }
 
@@ -203,7 +203,7 @@ window.confirmBatchMove = () => {
     const targetType = trigger.dataset.type;
 
     if (!targetId || !targetType) {
-        alert('请选择移动目标');
+        showSyncToast('请选择移动目标', 'error');
         return;
     }
 
@@ -235,7 +235,7 @@ window.confirmBatchMove = () => {
         showSyncToast(`已将 ${count} 项任务移动到 "${targetGroup.name}"`);
     } else {
         // 移动到项目
-        const targetProject = state.projects.find(p => p.id == targetId);
+        const targetProject = state.projects.find(p => String(p.id) === String(targetId));
         if (!targetProject) return;
 
         state.todos = state.todos.map(t =>

@@ -1,5 +1,7 @@
 // 项目管理
 
+let editingProjectId = null;
+let selectedProjectColor = '#3b82f6';
 
 function initProjects() {
     const projectBtn = document.getElementById('projectBtn');
@@ -43,7 +45,7 @@ function selectProjectColor(color) {
 window.saveProject = function () {
     const name = document.getElementById('projectNameInput').value.trim();
     if (!name) {
-        alert('请输入项目名称');
+        showSyncToast('请输入项目名称', 'error');
         return;
     }
 
@@ -89,7 +91,7 @@ function renderProjects() {
     emptyState.style.display = 'none';
 
     container.innerHTML = state.projects.map(project => {
-        const projectTodos = state.todos.filter(t => t.projectId == project.id);  // 使用 == 比较
+        const projectTodos = state.todos.filter(t => String(t.projectId) === String(project.id));
         const totalTodos = projectTodos.length;
         const completedTodos = projectTodos.filter(t => t.completed).length;
         const progress = totalTodos > 0 ? Math.round((completedTodos / totalTodos) * 100) : 0;
@@ -176,7 +178,7 @@ function renderProjects() {
 }
 
 window.viewProjectTodos = function (projectId) {
-    const project = state.projects.find(p => p.id == projectId);
+    const project = state.projects.find(p => String(p.id) === String(projectId));
     if (!project) return;
 
     // 设置当前项目过滤
@@ -221,7 +223,7 @@ window.deleteProject = async function (projectId) {
         if (!project) return;
 
         // 检查该项目下是否有任务
-        const projectTasks = state.todos.filter(t => t.projectId == projectId);
+        const projectTasks = state.todos.filter(t => String(t.projectId) === String(projectId));
         const defaultGroup = state.groups[0];
 
         if (projectTasks.length > 0) {
@@ -242,12 +244,12 @@ window.deleteProject = async function (projectId) {
                         state.deletedIds.push(t.id);
                     }
                 });
-                state.todos = state.todos.filter(t => t.projectId != projectId);
+                state.todos = state.todos.filter(t => String(t.projectId) !== String(projectId));
             } else if (action === 2) {
                 // 用户选择移至默认分组
                 if (defaultGroup) {
                     state.todos = state.todos.map(t => {
-                        if (t.projectId == projectId) {
+                        if (String(t.projectId) === String(projectId)) {
                             return {
                                 ...t,
                                 projectId: null,
@@ -262,8 +264,8 @@ window.deleteProject = async function (projectId) {
                     });
                 } else {
                     // 没有默认分组，提示用户并删除任务
-                    alert('没有默认分组，项目任务将被删除');
-                    state.todos = state.todos.filter(t => t.projectId != projectId);
+                    showSyncToast('没有默认分组，项目任务将被删除', 'error');
+                    state.todos = state.todos.filter(t => String(t.projectId) !== String(projectId));
                 }
             }
         } else {
@@ -284,7 +286,7 @@ window.deleteProject = async function (projectId) {
         state.projects = state.projects.filter(p => p.id !== projectId);
 
         // 清除当前项目选择（如果删除的是当前选中的项目）
-        if (state.currentProjectId == projectId) {
+        if (String(state.currentProjectId) === String(projectId)) {
             state.currentProjectId = null;
         }
 
@@ -298,7 +300,7 @@ window.deleteProject = async function (projectId) {
         showSyncToast(`项目"${project.name}"已删除`);
     } catch (error) {
         console.error('删除项目时出错:', error);
-        alert('删除项目失败，请重试');
+        showSyncToast('删除项目失败，请重试', 'error');
     }
 };
 
