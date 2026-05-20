@@ -41,4 +41,4 @@ dist/Todo-dev/ProLife.exe
 
 ## 相关链接
 
-原单文件版本：[Todo (monolithic)](https://github.com/1850741061/Todo)
+原单文件版本：[Todo (monolithic)]([https://github.com/1850741061/Todo](https://github.com/1850741061/life-manager))
