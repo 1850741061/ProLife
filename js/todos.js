@@ -117,112 +117,112 @@ window.openAddTodoModal = function () {
 };
 
 function createTodoItem(t, index) {
-    const li = document.createElement('li');
-    li.className = `todo-item ${t.completed ? 'completed' : ''} ${t.projectId ? 'project-task' : ''} fade-in`;
-    li.style.setProperty('--group-color', t.projectId ? t.projectColor : t.groupColor);
-    li.style.animationDelay = `${index * 0.03}s`;
+            const li = document.createElement('li');
+            li.className = `todo-item ${t.completed ? 'completed' : ''} ${t.projectId ? 'project-task' : ''} fade-in`;
+            li.style.setProperty('--group-color', t.projectId ? t.projectColor : t.groupColor);
+            li.style.animationDelay = `${index * 0.03}s`;
 
-    li.draggable = true;
-    li.ondragstart = (e) => onTodoDragStart(e, t.id);
-    li.ondragend = (e) => onTodoDragEnd(e);
-    li.ondragover = (e) => onTodoDragOver(e, t.id);
-    li.ondragleave = (e) => onTodoDragLeave(e);
-    li.ondrop = (e) => onTodoDrop(e, t.id);
+            li.draggable = true;
+            li.ondragstart = (e) => onTodoDragStart(e, t.id);
+            li.ondragend = (e) => onTodoDragEnd(e);
+            li.ondragover = (e) => onTodoDragOver(e, t.id);
+            li.ondragleave = (e) => onTodoDragLeave(e);
+            li.ondrop = (e) => onTodoDrop(e, t.id);
 
-    const pLabel = pMap[t.priority] || '中';
-    const dateDisplay = t.date ? t.date.substring(5) : '无日期';
+            const pLabel = pMap[t.priority] || '中';
+            const dateDisplay = t.date ? t.date.substring(5) : '无日期';
 
-    let timeRangeHtml = '';
-    if (t.startTime || t.endTime) {
-        timeRangeHtml = `<div class="todo-time-range"><i class="far fa-clock"></i> ${t.startTime || '--:--'} - ${t.endTime || '--:--'}</div>`;
-    }
+            let timeRangeHtml = '';
+            if (t.startTime || t.endTime) {
+                timeRangeHtml = `<div class="todo-time-range"><i class="far fa-clock"></i> ${t.startTime || '--:--'} - ${t.endTime || '--:--'}</div>`;
+            }
 
-    let subtasksHtml = '';
-    if (t.subtasks && t.subtasks.length > 0) {
-        const completedSubtasks = t.subtasks.filter(st => st.completed).length;
-        const hasManualSetting = state.expandedSubtasks[t.id] !== undefined;
-        const allSubtasksCompleted = t.subtasks.every(st => st.completed);
-        const isExpanded = hasManualSetting ? state.expandedSubtasks[t.id] : !allSubtasksCompleted;
-        const expandIcon = isExpanded ? 'fa-chevron-down' : 'fa-chevron-right';
-        const subtaskListDisplay = isExpanded ? 'flex' : 'none';
+            let subtasksHtml = '';
+            if (t.subtasks && t.subtasks.length > 0) {
+                const completedSubtasks = t.subtasks.filter(st => st.completed).length;
+                const hasManualSetting = state.expandedSubtasks[t.id] !== undefined;
+                const allSubtasksCompleted = t.subtasks.every(st => st.completed);
+                const isExpanded = hasManualSetting ? state.expandedSubtasks[t.id] : !allSubtasksCompleted;
+                const expandIcon = isExpanded ? 'fa-chevron-down' : 'fa-chevron-right';
+                const subtaskListDisplay = isExpanded ? 'flex' : 'none';
 
-        subtasksHtml = `
-            <div class="subtasks-section">
-                <div class="subtasks-header" style="cursor: pointer;" onclick="toggleSubtasksExpand(${t.id})">
-                    <span>
-                        <i class="fas ${expandIcon}" id="expand-icon-${t.id}" style="margin-right: 5px; transition: transform 0.2s;"></i>
-                        <i class="fas fa-tasks"></i> 子任务 (${completedSubtasks}/${t.subtasks.length})
-                    </span>
-                    <button class="add-subtask-btn" onclick="event.stopPropagation(); toggleSubtaskInput(${t.id})"><i class="fas fa-plus"></i> 添加</button>
+                subtasksHtml = `
+                    <div class="subtasks-section">
+                        <div class="subtasks-header" style="cursor: pointer;" onclick="toggleSubtasksExpand(${t.id})">
+                            <span>
+                                <i class="fas ${expandIcon}" id="expand-icon-${t.id}" style="margin-right: 5px; transition: transform 0.2s;"></i>
+                                <i class="fas fa-tasks"></i> 子任务 (${completedSubtasks}/${t.subtasks.length})
+                            </span>
+                            <button class="add-subtask-btn" onclick="event.stopPropagation(); toggleSubtaskInput(${t.id})"><i class="fas fa-plus"></i> 添加</button>
+                        </div>
+                        <ul class="subtask-list slide-in" id="subtask-list-${t.id}" style="display: ${subtaskListDisplay};">
+                            ${t.subtasks.map(st => `
+                                <li class="subtask-item ${st.completed ? 'completed' : ''}" data-subtask-id="${st.id}">
+                                    <input type="checkbox" class="subtask-checkbox" ${st.completed ? 'checked' : ''} onchange="toggleSubtask(${t.id}, ${st.id})">
+                                    <span class="subtask-text" onclick="startEditSubtask(${t.id}, ${st.id})" style="cursor: pointer; flex: 1;">${escapeHtml(st.text)}</span>
+                                    <button class="subtask-edit" onclick="startEditSubtask(${t.id}, ${st.id})" style="margin-right: 5px;"><i class="fas fa-edit"></i></button>
+                                    <button class="subtask-delete" onclick="deleteSubtask(${t.id}, ${st.id})"><i class="fas fa-times"></i></button>
+                                </li>
+                            `).join('')}
+                        </ul>
+                        <div class="add-subtask-input" id="subtask-input-${t.id}" style="display: ${isExpanded ? 'flex' : 'none'};">
+                            <input type="text" placeholder="子任务内容..." id="subtask-text-${t.id}" onkeypress="if(event.key==='Enter') addSubtask(${t.id})">
+                            <button onclick="addSubtask(${t.id})"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                subtasksHtml = `
+                    <div class="subtasks-section">
+                        <div class="subtasks-header">
+                            <span><i class="fas fa-tasks"></i> 子任务</span>
+                            <button class="add-subtask-btn" onclick="toggleSubtaskInput(${t.id})"><i class="fas fa-plus"></i> 添加</button>
+                        </div>
+                        <ul class="subtask-list" id="subtask-list-${t.id}"></ul>
+                        <div class="add-subtask-input" id="subtask-input-${t.id}">
+                            <input type="text" placeholder="子任务内容..." id="subtask-text-${t.id}" onkeypress="if(event.key==='Enter') addSubtask(${t.id})">
+                            <button onclick="addSubtask(${t.id})"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const batchCheckboxHtml = state.batchMode ? `
+                <input type="checkbox" id="batch-checkbox-${t.id}" ${state.selectedTodos.has(String(t.id)) ? 'checked' : ''}
+                       onclick="event.stopPropagation(); toggleTodoSelection(${t.id})"
+                       style="width: 20px; height: 20px; cursor: pointer; margin-right: 10px;">
+            ` : '';
+
+            li.innerHTML = `
+                <div class="todo-main">
+                    ${batchCheckboxHtml}
+                    <label class="checkbox"><input type="checkbox" ${t.completed ? 'checked' : ''} onchange="event.stopPropagation(); toggleTodo(${t.id})"><span class="checkmark"></span></label>
+                    <div class="todo-content" style="flex:1">
+                        <div class="todo-text">${t.text}</div>
+                        <div class="todo-attributes">
+                            <span class="attribute-badge" style="color:var(--text-secondary); border-color:var(--border-color); background:var(--bg-color);"><i class="far fa-calendar"></i> ${dateDisplay}</span>
+                            ${timeRangeHtml ? `<span class="attribute-badge" style="color:var(--accent-color); border-color:var(--accent-color);"><i class="far fa-clock"></i> ${t.startTime || '--'} - ${t.endTime || '--'}</span>` : ''}
+                            ${t.repeat && t.repeat !== 'none' ? `<span class="attribute-badge" style="color:var(--warning-color); border-color:var(--warning-color);"><i class="fas fa-redo"></i> ${getRepeatLabel(t.repeat)}</span>` : ''}
+                            <span class="attribute-badge priority-${t.priority}">${pLabel}优先级</span>
+                            ${t.projectId
+                    ? `<span class="attribute-badge" style="color:${t.projectColor}; border-color:${t.projectColor};"><i class="fas fa-project-diagram"></i> ${t.projectName}</span>`
+                    : `<span class="attribute-badge" style="color:${t.groupColor}; border-color:${t.groupColor};">${t.groupName}</span>`
+                }
+                        </div>
+                    </div>
                 </div>
-                <ul class="subtask-list slide-in" id="subtask-list-${t.id}" style="display: ${subtaskListDisplay};">
-                    ${t.subtasks.map(st => `
-                        <li class="subtask-item ${st.completed ? 'completed' : ''}" data-subtask-id="${st.id}">
-                            <input type="checkbox" class="subtask-checkbox" ${st.completed ? 'checked' : ''} onchange="toggleSubtask(${t.id}, ${st.id})">
-                            <span class="subtask-text" onclick="startEditSubtask(${t.id}, ${st.id})" style="cursor: pointer; flex: 1;">${escapeHtml(st.text)}</span>
-                            <button class="subtask-edit" onclick="startEditSubtask(${t.id}, ${st.id})" style="margin-right: 5px;"><i class="fas fa-edit"></i></button>
-                            <button class="subtask-delete" onclick="deleteSubtask(${t.id}, ${st.id})"><i class="fas fa-times"></i></button>
-                        </li>
-                    `).join('')}
-                </ul>
-                <div class="add-subtask-input" id="subtask-input-${t.id}" style="display: ${isExpanded ? 'flex' : 'none'};">
-                    <input type="text" placeholder="子任务内容..." id="subtask-text-${t.id}" onkeypress="if(event.key==='Enter') addSubtask(${t.id})">
-                    <button onclick="addSubtask(${t.id})"><i class="fas fa-plus"></i></button>
+                ${t.notes ? `<div class="todo-notes">${t.notes}</div>` : ''}
+                ${subtasksHtml}
+                <div class="todo-actions">
+                    <i class="fas fa-grip-vertical action-icon drag-handle" title="拖拽排序" style="cursor: grab; color: var(--text-secondary);"></i>
+                    <i class="fas fa-archive action-icon" onclick="archiveTodo(${t.id})" title="归档任务" style="color: var(--warning-color);"></i>
+                    <i class="fas fa-pen action-icon" onclick="openEditTask(${t.id})"></i>
+                    <i class="fas fa-trash action-icon" onclick="deleteTodo(${t.id})" style="color:var(--danger-color)"></i>
                 </div>
-            </div>
-        `;
-    } else {
-        subtasksHtml = `
-            <div class="subtasks-section">
-                <div class="subtasks-header">
-                    <span><i class="fas fa-tasks"></i> 子任务</span>
-                    <button class="add-subtask-btn" onclick="toggleSubtaskInput(${t.id})"><i class="fas fa-plus"></i> 添加</button>
-                </div>
-                <ul class="subtask-list" id="subtask-list-${t.id}"></ul>
-                <div class="add-subtask-input" id="subtask-input-${t.id}">
-                    <input type="text" placeholder="子任务内容..." id="subtask-text-${t.id}" onkeypress="if(event.key==='Enter') addSubtask(${t.id})">
-                    <button onclick="addSubtask(${t.id})"><i class="fas fa-plus"></i></button>
-                </div>
-            </div>
-        `;
-    }
+            `;
 
-    const batchCheckboxHtml = state.batchMode ? `
-        <input type="checkbox" id="batch-checkbox-${t.id}" ${state.selectedTodos.has(t.id) ? 'checked' : ''}
-               onclick="event.stopPropagation(); toggleTodoSelection(${t.id})"
-               style="width: 20px; height: 20px; cursor: pointer; margin-right: 10px;">
-    ` : '';
-
-    li.innerHTML = `
-        <div class="todo-main">
-            ${batchCheckboxHtml}
-            <label class="checkbox"><input type="checkbox" ${t.completed ? 'checked' : ''} onchange="event.stopPropagation(); toggleTodo(${t.id})"><span class="checkmark"></span></label>
-            <div class="todo-content" style="flex:1">
-                <div class="todo-text">${t.text}</div>
-                <div class="todo-attributes">
-                    <span class="attribute-badge" style="color:var(--text-secondary); border-color:var(--border-color); background:var(--bg-color);"><i class="far fa-calendar"></i> ${dateDisplay}</span>
-                    ${timeRangeHtml ? `<span class="attribute-badge" style="color:var(--accent-color); border-color:var(--accent-color);"><i class="far fa-clock"></i> ${t.startTime || '--'} - ${t.endTime || '--'}</span>` : ''}
-                    ${t.repeat && t.repeat !== 'none' ? `<span class="attribute-badge" style="color:var(--warning-color); border-color:var(--warning-color);"><i class="fas fa-redo"></i> ${getRepeatLabel(t.repeat)}</span>` : ''}
-                    <span class="attribute-badge priority-${t.priority}">${pLabel}优先级</span>
-                    ${t.projectId
-            ? `<span class="attribute-badge" style="color:${t.projectColor}; border-color:${t.projectColor};"><i class="fas fa-project-diagram"></i> ${t.projectName}</span>`
-            : `<span class="attribute-badge" style="color:${t.groupColor}; border-color:${t.groupColor};">${t.groupName}</span>`
+            return li;
         }
-                </div>
-            </div>
-        </div>
-        ${t.notes ? `<div class="todo-notes">${t.notes}</div>` : ''}
-        ${subtasksHtml}
-        <div class="todo-actions">
-            <i class="fas fa-grip-vertical action-icon drag-handle" title="拖拽排序" style="cursor: grab; color: var(--text-secondary);"></i>
-            <i class="fas fa-archive action-icon" onclick="archiveTodo(${t.id})" title="归档任务" style="color: var(--warning-color);"></i>
-            <i class="fas fa-pen action-icon" onclick="openEditTask(${t.id})"></i>
-            <i class="fas fa-trash action-icon" onclick="deleteTodo(${t.id})" style="color:var(--danger-color)"></i>
-        </div>
-    `;
-
-    return li;
-}
 
 function renderTodos() {
     // 根据视图模式渲染不同的布局
@@ -539,46 +539,46 @@ window.setDDLSort = function (mode) {
 };
 
 window.toggleTodo = (id) => {
-    const task = state.todos.find(t => t.id === id);
-    if (!task) return;
+            const task = state.todos.find(t => sameEntityId(t.id, id));
+            if (!task) return;
 
-    // 检查子任务状态
-    const hasIncompleteSubtasks = task.subtasks && task.subtasks.length > 0 &&
-        !task.subtasks.every(st => st.completed);
+            // 检查子任务状态
+            const hasIncompleteSubtasks = task.subtasks && task.subtasks.length > 0 &&
+                !task.subtasks.every(st => st.completed);
 
-    // 在日历页面点击含有未完成子任务的主任务，标记为完成并弹出详情页
-    const isInCalendarView = state.view === 'calendar' && state.selectedDate;
+            // 在日历页面点击含有未完成子任务的主任务，标记为完成并弹出详情页
+            const isInCalendarView = state.view === 'calendar' && state.selectedDate;
 
-    if (!task.completed && hasIncompleteSubtasks && isInCalendarView) {
-        // 先标记为完成
-        state.todos = state.todos.map(t => t.id === id ? { ...t, completed: true } : t);
+            if (!task.completed && hasIncompleteSubtasks && isInCalendarView) {
+                // 先标记为完成
+                state.todos = state.todos.map(t => sameEntityId(t.id, id) ? { ...t, completed: true } : t);
 
-        // 如果是重复任务，创建下一个实例
-        if (task.repeat && task.repeat !== 'none') {
-            createNextRecurringTask(task);
-        }
+                // 如果是重复任务，创建下一个实例
+                if (task.repeat && task.repeat !== 'none') {
+                    createNextRecurringTask(task);
+                }
 
-        save();
-        renderTodos();
-        if (state.selectedDate) renderCalendarDetail();
-        // 然后弹出详情页
-        setTimeout(() => openTaskDetailModal(id), 100);
-        return;
-    }
+                save();
+                renderTodos();
+                if (state.selectedDate) renderCalendarDetail();
+                // 然后弹出详情页
+                setTimeout(() => openTaskDetailModal(id), 100);
+                return;
+            }
 
-    // 其他情况正常切换完成状态
-    const newCompletedState = !task.completed;
-    state.todos = state.todos.map(t => t.id === id ? { ...t, completed: newCompletedState } : t);
+            // 其他情况正常切换完成状态
+            const newCompletedState = !task.completed;
+            state.todos = state.todos.map(t => sameEntityId(t.id, id) ? { ...t, completed: newCompletedState } : t);
 
-    // 如果任务是重复任务且刚刚被标记为完成，创建下一个实例
-    if (newCompletedState && task.repeat && task.repeat !== 'none') {
-        createNextRecurringTask(task);
-    }
+            // 如果任务是重复任务且刚刚被标记为完成，创建下一个实例
+            if (newCompletedState && task.repeat && task.repeat !== 'none') {
+                createNextRecurringTask(task);
+            }
 
-    save();
-    renderTodos();
-    if (state.view === 'calendar' && state.selectedDate) renderCalendarDetail();
-};
+            save();
+            renderTodos();
+            if (state.view === 'calendar' && state.selectedDate) renderCalendarDetail();
+        };
 
 // 获取重复类型标签
 function getRepeatLabel(repeatType) {
@@ -657,190 +657,193 @@ function calculateNextDate(currentDateStr, repeatType) {
 }
 
 window.deleteTodo = async (id) => {
-    const confirmed = await showConfirm('删除任务', '确定要删除这个任务吗？', ['取消', '删除']);
-    if (confirmed === 0) return;
-    // 记录已删除的ID，用于云端同步
-    if (!state.deletedIds.includes(id)) {
-        state.deletedIds.push(id);
-    }
-    state.todos = state.todos.filter(t => t.id !== id);
-    save(); renderTodos();
-};
+            const confirmed = await showConfirm('删除任务', '确定要删除这个任务吗？', ['取消', '删除']);
+            if (confirmed === 0) return;
+            // 记录已删除的ID，用于云端同步
+            const tombstone = entityTombstone('todo', id);
+            if (!state.deletedIds.includes(tombstone)) {
+                state.deletedIds.push(tombstone);
+            }
+            state.todos = state.todos.filter(t => !sameEntityId(t.id, id));
+            save(); renderTodos();
+        };
 
 // 归档单个任务
 window.archiveTodo = async (id) => {
-    const task = state.todos.find(t => t.id === id);
-    if (!task) return;
+            const task = state.todos.find(t => sameEntityId(t.id, id));
+            if (!task) return;
 
-    const confirmed = await showConfirm('归档任务', `确定要归档"${task.text}"吗？`, ['取消', '归档']);
-    if (confirmed === 0) return;
+            const confirmed = await showConfirm('归档任务', `确定要归档"${task.text}"吗？`, ['取消', '归档']);
+            if (confirmed === 0) return;
 
-    // 添加到归档列表
-    task.archivedAt = new Date().toISOString();
-    state.archivedTodos.push(task);
+            // 添加到归档列表
+            const now = new Date().toISOString();
+            task.archivedAt = now;
+            task.updatedAt = now;
+            state.archivedTodos.push(task);
 
-    // 从主列表移除
-    state.todos = state.todos.filter(t => t.id !== id);
+            // 从主列表移除
+            state.todos = state.todos.filter(t => !sameEntityId(t.id, id));
 
-    save();
-    renderTodos();
-    renderGroups();
-    renderStats();
+            save();
+            renderTodos();
+            renderGroups();
+            renderStats();
 
-    showSyncToast('任务已归档');
-};
+            showSyncToast('任务已归档');
+        };
 
 // 查看任务详情（只读）
 window.viewTodo = (id) => {
-    const t = state.todos.find(x => x.id === id);
-    if (!t) return;
+            const t = state.todos.find(x => sameEntityId(x.id, id));
+            if (!t) return;
 
-    const priorityLabels = { low: '低', medium: '中', high: '高' };
-    const priorityColors = { low: 'var(--success-color)', medium: 'var(--warning-color)', high: 'var(--danger-color)' };
+            const priorityLabels = { low: '低', medium: '中', high: '高' };
+            const priorityColors = { low: 'var(--success-color)', medium: 'var(--warning-color)', high: 'var(--danger-color)' };
 
-    // 构建详情内容
-    let content = `
-        <div style="margin-bottom: 20px;">
-            <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">任务内容</div>
-            <div style="font-size: 1.2rem; font-weight: 600; line-height: 1.6;">${t.text}</div>
-        </div>
-    `;
-
-    if (t.notes) {
-        content += `
-            <div style="margin-bottom: 20px;">
-                <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">备注</div>
-                <div style="background: var(--bg-color); padding: 15px; border-radius: var(--radius); border: 2px solid var(--border-color); line-height: 1.6;">${t.notes}</div>
-            </div>
-        `;
-    }
-
-    content += `
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
-            <div>
-                <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">日期</div>
-                <div style="font-size: 1rem; font-weight: 600;"><i class="far fa-calendar"></i> ${t.date || '未设置'}</div>
-            </div>
-            <div>
-                <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">优先级</div>
-                <div style="font-size: 1rem; font-weight: 600; color: ${priorityColors[t.priority] || 'var(--text-primary)'};">
-                    <i class="fas fa-flag"></i> ${priorityLabels[t.priority] || '中'}
+            // 构建详情内容
+            let content = `
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">任务内容</div>
+                    <div style="font-size: 1.2rem; font-weight: 600; line-height: 1.6;">${t.text}</div>
                 </div>
-            </div>
-        </div>
-    `;
+            `;
 
-    if (t.startTime || t.endTime) {
-        content += `
-            <div style="margin-bottom: 20px;">
-                <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">时间段</div>
-                <div style="font-size: 1rem; font-weight: 600;"><i class="far fa-clock"></i> ${t.startTime || '--:--'} - ${t.endTime || '--:--'}</div>
-            </div>
-        `;
-    }
+            if (t.notes) {
+                content += `
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">备注</div>
+                        <div style="background: var(--bg-color); padding: 15px; border-radius: var(--radius); border: 2px solid var(--border-color); line-height: 1.6;">${t.notes}</div>
+                    </div>
+                `;
+            }
 
-    content += `
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
-            <div>
-                <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">分组</div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span class="group-color" style="width: 12px; height: 12px; border-radius: 2px; border: 2px solid var(--border-color); background: ${t.groupColor}; flex-shrink: 0;"></span>
-                    <span style="font-weight: 600;">${t.groupName || '默认'}</span>
-                </div>
-            </div>
-    `;
-
-    if (t.projectName) {
-        content += `
-            <div>
-                <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">项目</div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span class="group-color" style="width: 12px; height: 12px; border-radius: 2px; border: 2px solid var(--border-color); background: ${t.projectColor}; flex-shrink: 0;"></span>
-                    <span style="font-weight: 600;">${t.projectName}</span>
-                </div>
-            </div>
-        `;
-    }
-
-    content += `</div>`;
-
-    if (t.repeat && t.repeat !== 'none') {
-        const repeatLabels = { daily: '每天', weekly: '每周', monthly: '每月', yearly: '每年' };
-        content += `
-            <div style="margin-bottom: 20px;">
-                <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">重复</div>
-                <div style="font-size: 1rem; font-weight: 600;"><i class="fas fa-redo"></i> ${repeatLabels[t.repeat]}</div>
-                ${t.repeatEndDate ? `<div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">至 ${t.repeatEndDate}</div>` : ''}
-            </div>
-        `;
-    }
-
-    if (t.subtasks && t.subtasks.length > 0) {
-        const completedCount = t.subtasks.filter(st => st.completed).length;
-        content += `
-            <div style="margin-bottom: 20px;">
-                <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">
-                    <i class="fas fa-tasks"></i> 子任务 (${completedCount}/${t.subtasks.length})
-                </div>
-                <div style="background: var(--bg-color); padding: 15px; border-radius: var(--radius); border: 2px solid var(--border-color);">
-                    ${t.subtasks.map(st => `
-                        <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; ${st.completed ? 'opacity: 0.6;' : ''}">
-                            <i class="fas ${st.completed ? 'fa-check-circle' : 'fa-circle'}" style="color: ${st.completed ? 'var(--success-color)' : 'var(--text-secondary)'};"></i>
-                            <span style="${st.completed ? 'text-decoration: line-through;' : ''}">${st.text}</span>
+            content += `
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div>
+                        <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">日期</div>
+                        <div style="font-size: 1rem; font-weight: 600;"><i class="far fa-calendar"></i> ${t.date || '未设置'}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">优先级</div>
+                        <div style="font-size: 1rem; font-weight: 600; color: ${priorityColors[t.priority] || 'var(--text-primary)'};">
+                            <i class="fas fa-flag"></i> ${priorityLabels[t.priority] || '中'}
                         </div>
-                    `).join('')}
+                    </div>
                 </div>
-            </div>
-        `;
-    }
+            `;
 
-    document.getElementById('viewTodoContent').innerHTML = content;
+            if (t.startTime || t.endTime) {
+                content += `
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">时间段</div>
+                        <div style="font-size: 1rem; font-weight: 600;"><i class="far fa-clock"></i> ${t.startTime || '--:--'} - ${t.endTime || '--:--'}</div>
+                    </div>
+                `;
+            }
 
-    // 设置编辑按钮的点击事件
-    document.getElementById('viewTodoEditBtn').onclick = () => {
-        closeModal('viewTodoModal');
-        openEditTask(id);
-    };
+            content += `
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div>
+                        <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">分组</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="group-color" style="width: 12px; height: 12px; border-radius: 2px; border: 2px solid var(--border-color); background: ${t.groupColor}; flex-shrink: 0;"></span>
+                            <span style="font-weight: 600;">${t.groupName || '默认'}</span>
+                        </div>
+                    </div>
+            `;
 
-    openModal('viewTodoModal');
-};
+            if (t.projectName) {
+                content += `
+                    <div>
+                        <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">项目</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="group-color" style="width: 12px; height: 12px; border-radius: 2px; border: 2px solid var(--border-color); background: ${t.projectColor}; flex-shrink: 0;"></span>
+                            <span style="font-weight: 600;">${t.projectName}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            content += `</div>`;
+
+            if (t.repeat && t.repeat !== 'none') {
+                const repeatLabels = { daily: '每天', weekly: '每周', monthly: '每月', yearly: '每年' };
+                content += `
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">重复</div>
+                        <div style="font-size: 1rem; font-weight: 600;"><i class="fas fa-redo"></i> ${repeatLabels[t.repeat]}</div>
+                        ${t.repeatEndDate ? `<div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">至 ${t.repeatEndDate}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            if (t.subtasks && t.subtasks.length > 0) {
+                const completedCount = t.subtasks.filter(st => st.completed).length;
+                content += `
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">
+                            <i class="fas fa-tasks"></i> 子任务 (${completedCount}/${t.subtasks.length})
+                        </div>
+                        <div style="background: var(--bg-color); padding: 15px; border-radius: var(--radius); border: 2px solid var(--border-color);">
+                            ${t.subtasks.map(st => `
+                                <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; ${st.completed ? 'opacity: 0.6;' : ''}">
+                                    <i class="fas ${st.completed ? 'fa-check-circle' : 'fa-circle'}" style="color: ${st.completed ? 'var(--success-color)' : 'var(--text-secondary)'};"></i>
+                                    <span style="${st.completed ? 'text-decoration: line-through;' : ''}">${st.text}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('viewTodoContent').innerHTML = content;
+
+            // 设置编辑按钮的点击事件
+            document.getElementById('viewTodoEditBtn').onclick = () => {
+                closeModal('viewTodoModal');
+                openEditTask(id);
+            };
+
+            openModal('viewTodoModal');
+        };
 
 window.openEditTask = (id) => {
-    const t = state.todos.find(x => x.id === id);
-    if (!t) return;
-    state.editingId = id;
-    document.getElementById('editInput').value = t.text;
-    document.getElementById('editNotes').value = t.notes || '';
-    document.getElementById('editTodoDate').value = t.date;
-    setCustomSelectValue('editPriorityCustom', t.priority);
-    document.getElementById('editStartTime').value = t.startTime || '';
-    document.getElementById('editEndTime').value = t.endTime || '';
+            const t = state.todos.find(x => sameEntityId(x.id, id));
+            if (!t) return;
+            state.editingId = id;
+            document.getElementById('editInput').value = t.text;
+            document.getElementById('editNotes').value = t.notes || '';
+            document.getElementById('editTodoDate').value = t.date;
+            setCustomSelectValue('editPriorityCustom', t.priority);
+            document.getElementById('editStartTime').value = t.startTime || '';
+            document.getElementById('editEndTime').value = t.endTime || '';
 
-    // 设置重复选项
-    const repeatValue = t.repeat || 'none';
-    setCustomSelectValue('editRepeatCustom', repeatValue);
-    document.getElementById('editRepeatEndDate').value = t.repeatEndDate || '';
+            // 设置重复选项
+            const repeatValue = t.repeat || 'none';
+            setCustomSelectValue('editRepeatCustom', repeatValue);
+            document.getElementById('editRepeatEndDate').value = t.repeatEndDate || '';
 
-    // 显示/隐藏重复结束日期
-    const endDateContainer = document.getElementById('repeatEndDateContainer');
-    if (repeatValue !== 'none') {
-        endDateContainer.style.display = 'block';
-    } else {
-        endDateContainer.style.display = 'none';
-    }
+            // 显示/隐藏重复结束日期
+            const endDateContainer = document.getElementById('repeatEndDateContainer');
+            if (repeatValue !== 'none') {
+                endDateContainer.style.display = 'block';
+            } else {
+                endDateContainer.style.display = 'none';
+            }
 
-    // 更新编辑分类选择器
-    updateEditCategorySelect();
+            // 更新编辑分类选择器
+            updateEditCategorySelect();
 
-    // 设置当前归属
-    if (t.projectId) {
-        setCustomSelectValue('editCategorySelectCustom', t.projectId);
-    } else if (t.groupId) {
-        setCustomSelectValue('editCategorySelectCustom', t.groupId);
-    }
+            // 设置当前归属
+            if (t.projectId) {
+                setCustomSelectValue('editCategorySelectCustom', t.projectId);
+            } else if (t.groupId) {
+                setCustomSelectValue('editCategorySelectCustom', t.groupId);
+            }
 
-    openModal('editModal');
-};
+            openModal('editModal');
+        };
 
 // 更新编辑分类选择器（合并分组和项目）
 function updateEditCategorySelect() {
@@ -927,78 +930,82 @@ function updateEditCategorySelect() {
 }
 
 window.saveEditTask = () => {
-    if (!state.editingId) return;
-    const text = document.getElementById('editInput').value.trim();
-    if (!text) return;
+            if (!state.editingId) return;
+            const text = document.getElementById('editInput').value.trim();
+            if (!text) return;
 
-    const categoryId = getCustomSelectValue('editCategorySelectCustom');
-    const categoryNative = document.getElementById('editCategorySelect');
-    const selectedOption = categoryNative ? categoryNative.querySelector(`option[value="${categoryId}"]`) : null;
-    const categoryType = selectedOption ? selectedOption.getAttribute('data-type') : null;
+            const categoryId = getCustomSelectValue('editCategorySelectCustom');
+            const categoryNative = document.getElementById('editCategorySelect');
+            const selectedOption = categoryNative ? categoryNative.querySelector(`option[value="${categoryId}"]`) : null;
+            const categoryType = selectedOption ? selectedOption.getAttribute('data-type') : null;
 
-    const priority = getCustomSelectValue('editPriorityCustom');
-    const repeat = getCustomSelectValue('editRepeatCustom');
-    const repeatEndDate = document.getElementById('editRepeatEndDate').value || null;
+            const priority = getCustomSelectValue('editPriorityCustom');
+            const repeat = getCustomSelectValue('editRepeatCustom');
+            const repeatEndDate = document.getElementById('editRepeatEndDate').value || null;
 
-    // 项目和分组互斥
-    let finalGroupId = null;
-    let finalGroupName = null;
-    let finalGroupColor = null;
-    let finalProjectId = null;
-    let finalProjectName = null;
-    let finalProjectColor = null;
+            // 项目和分组互斥
+            let finalGroupId = null;
+            let finalGroupName = null;
+            let finalGroupColor = null;
+            let finalProjectId = null;
+            let finalProjectName = null;
+            let finalProjectColor = null;
 
-    if (categoryType === 'project' && categoryId) {
-        const project = state.projects.find(p => String(p.id) === String(categoryId));
-        if (project) {
-            finalProjectId = String(project.id);  // 转为字符串
-            finalProjectName = project.name;
-            finalProjectColor = project.color;
-        }
-    } else if (categoryType === 'group' && categoryId) {
-        const group = state.groups.find(g => String(g.id) === String(categoryId));
-        if (group) {
-            finalGroupId = group.id;
-            finalGroupName = group.name;
-            finalGroupColor = group.color;
-        }
-    } else {
-        // 都没选，使用默认分组
-        if (state.groups.length > 0) {
-            const defaultGroup = state.groups[0];
-            finalGroupId = defaultGroup.id;
-            finalGroupName = defaultGroup.name;
-            finalGroupColor = defaultGroup.color;
-        }
-    }
+            if (categoryType === 'project' && categoryId) {
+                const project = state.projects.find(p => sameEntityId(p.id, categoryId));
+                if (project) {
+                    finalProjectId = String(project.id);  // 转为字符串
+                    finalProjectName = project.name;
+                    finalProjectColor = project.color;
+                }
+            } else if (categoryType === 'group' && categoryId) {
+                const group = state.groups.find(g => sameEntityId(g.id, categoryId));
+                if (group) {
+                    finalGroupId = group.id;
+                    finalGroupName = group.name;
+                    finalGroupColor = group.color;
+                }
+            } else {
+                // 都没选，使用默认分组
+                if (state.groups.length > 0) {
+                    const defaultGroup = state.groups[0];
+                    finalGroupId = defaultGroup.id;
+                    finalGroupName = defaultGroup.name;
+                    finalGroupColor = defaultGroup.color;
+                }
+            }
 
-    state.todos = state.todos.map(t => t.id === state.editingId ? {
-        ...t, text, notes: document.getElementById('editNotes').value.trim(),
-        priority: priority,
-        groupId: finalGroupId,
-        groupName: finalGroupName,
-        groupColor: finalGroupColor,
-        date: document.getElementById('editTodoDate').value,
-        startTime: document.getElementById('editStartTime').value || null,
-        endTime: document.getElementById('editEndTime').value || null,
-        repeat: repeat,
-        repeatEndDate: repeatEndDate,
-        projectId: finalProjectId,
-        projectName: finalProjectName,
-        projectColor: finalProjectColor
-    } : t);
-    save();
-    closeModal('editModal');
-    renderTodos();
-    renderProjects(); // 更新项目统计
-};
+            state.todos = state.todos.map(t => sameEntityId(t.id, state.editingId) ? {
+                ...t, text, notes: document.getElementById('editNotes').value.trim(),
+                priority: priority,
+                groupId: finalGroupId,
+                groupName: finalGroupName,
+                groupColor: finalGroupColor,
+                date: document.getElementById('editTodoDate').value,
+                startTime: document.getElementById('editStartTime').value || null,
+                endTime: document.getElementById('editEndTime').value || null,
+                repeat: repeat,
+                repeatEndDate: repeatEndDate,
+                projectId: finalProjectId,
+                projectName: finalProjectName,
+                projectColor: finalProjectColor
+            } : t);
+            save();
+            closeModal('editModal');
+            renderTodos();
+            renderProjects(); // 更新项目统计
+        };
 
 window.clearCompleted = async () => {
-    const confirmed = await showConfirm('清除已完成任务', '确定要清除所有已完成的任务吗？');
-    if (confirmed === 0) return;
-    state.todos = state.todos.filter(t => !t.completed);
-    save(); renderTodos();
-};
+            const confirmed = await showConfirm('清除已完成任务', '确定要清除所有已完成的任务吗？', ['取消', '清除']);
+            if (confirmed === 0) return;
+            state.todos.filter(t => t.completed).forEach(t => {
+                const tombstone = entityTombstone('todo', t.id);
+                if (!state.deletedIds.includes(tombstone)) state.deletedIds.push(tombstone);
+            });
+            state.todos = state.todos.filter(t => !t.completed);
+            save(); renderTodos();
+        };
 
 // --- 子任务相关函数 ---
 window.toggleSubtaskInput = (todoId) => {
@@ -1015,163 +1022,163 @@ window.toggleSubtaskInput = (todoId) => {
 };
 
 window.addSubtask = (todoId) => {
-    const input = document.getElementById(`subtask-text-${todoId}`);
-    const text = input.value.trim();
-    if (!text) return;
+            const input = document.getElementById(`subtask-text-${todoId}`);
+            const text = input.value.trim();
+            if (!text) return;
 
-    state.todos = state.todos.map(t => {
-        if (t.id === todoId) {
-            const subtasks = t.subtasks || [];
-            return {
-                ...t,
-                subtasks: [...subtasks, { id: uniqueId(), text, completed: false }]
-            };
-        }
-        return t;
-    });
-
-    save();
-    renderTodos();
-};
-
-window.toggleSubtask = (todoId, subtaskId) => {
-    state.todos = state.todos.map(t => {
-        if (t.id === todoId) {
-            const updatedSubtasks = t.subtasks.map(st =>
-                st.id === subtaskId ? { ...st, completed: !st.completed } : st
-            );
-
-            return {
-                ...t,
-                subtasks: updatedSubtasks
-                // 不再自动标记主任务为完成，主任务完成状态独立管理
-            };
-        }
-        return t;
-    });
-    save();
-    renderTodos();
-
-    // 如果详情页打开着，更新详情页中的计数和子任务列表
-    const modal = document.getElementById('taskDetailModal');
-    if (modal.classList.contains('active')) {
-        const task = state.todos.find(t => t.id === todoId);
-        if (task && task.subtasks && task.subtasks.length > 0) {
-            const completed = task.subtasks.filter(st => st.completed).length;
-            document.getElementById('detailSubtaskCount').innerText = `(${completed}/${task.subtasks.length})`;
-
-            // 更新子任务列表的显示
-            const subtaskList = document.getElementById('detailSubtaskList');
-            subtaskList.innerHTML = task.subtasks.map(st => `
-                <li class="subtask-item ${st.completed ? 'completed' : ''}">
-                    <input type="checkbox" class="subtask-checkbox" ${st.completed ? 'checked' : ''} onchange="toggleSubtask(${task.id}, ${st.id});">
-                    <span class="subtask-text">${escapeHtml(st.text)}</span>
-                </li>
-            `).join('');
-        }
-    }
-};
-
-window.deleteSubtask = async (todoId, subtaskId) => {
-    const result = await showConfirm('删除子任务', '确定要删除这个子任务吗？');
-    if (result !== 1) return; // 1是第二个按钮（确定）
-
-    state.todos = state.todos.map(t => {
-        if (t.id === todoId) {
-            return {
-                ...t,
-                subtasks: t.subtasks.filter(st => st.id !== subtaskId)
-            };
-        }
-        return t;
-    });
-    save();
-    renderTodos();
-};
-
-// 思维导图视图：添加子任务
-window.mmAddSubtask = (todoId) => {
-    const input = document.getElementById('mmSubtaskInput');
-    const text = input.value.trim();
-    if (!text) return;
-
-    const todo = state.todos.find(t => t.id === todoId);
-    if (!todo) return;
-
-    if (!todo.subtasks) todo.subtasks = [];
-    todo.subtasks.push({
-        id: uniqueId(),
-        text: text,
-        completed: false
-    });
-
-    save();
-    renderMindmap();
-    showTaskDetail(todo);
-};
-
-// 开始编辑子任务
-window.startEditSubtask = (todoId, subtaskId) => {
-    const subtaskItem = document.querySelector(`li[data-subtask-id="${subtaskId}"]`);
-    const subtaskText = subtaskItem.querySelector('.subtask-text');
-    const currentText = subtaskText.textContent;
-
-    // 创建编辑输入框
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = currentText;
-    input.className = 'subtask-edit-input';
-    input.style.cssText = 'flex: 1; padding: 4px 8px; border: 2px solid var(--accent-color); border-radius: var(--radius); font-size: 0.9rem;';
-
-    // 替换文本为输入框
-    subtaskText.style.display = 'none';
-    subtaskItem.insertBefore(input, subtaskText.nextSibling);
-    input.focus();
-    input.select();
-
-    // 保存编辑的函数
-    const saveEdit = () => {
-        const newText = input.value.trim();
-        if (newText) {
             state.todos = state.todos.map(t => {
-                if (t.id === todoId) {
+                if (sameEntityId(t.id, todoId)) {
+                    const subtasks = t.subtasks || [];
                     return {
                         ...t,
-                        subtasks: t.subtasks.map(st => {
-                            if (st.id === subtaskId) {
-                                return { ...st, text: newText };
-                            }
-                            return st;
-                        })
+                        subtasks: [...subtasks, { id: uniqueId(), text, completed: false }]
+                    };
+                }
+                return t;
+            });
+
+            save();
+            renderTodos();
+        };
+
+window.toggleSubtask = (todoId, subtaskId) => {
+            state.todos = state.todos.map(t => {
+                if (sameEntityId(t.id, todoId)) {
+                    const updatedSubtasks = t.subtasks.map(st =>
+                        sameEntityId(st.id, subtaskId) ? { ...st, completed: !st.completed } : st
+                    );
+
+                    return {
+                        ...t,
+                        subtasks: updatedSubtasks
+                        // 不再自动标记主任务为完成，主任务完成状态独立管理
                     };
                 }
                 return t;
             });
             save();
             renderTodos();
-        } else {
-            // 如果为空，恢复原样
-            input.remove();
-            subtaskText.style.display = '';
-        }
-    };
 
-    // 按Enter保存，按Esc取消
-    input.onkeydown = (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            saveEdit();
-        } else if (e.key === 'Escape') {
-            input.remove();
-            subtaskText.style.display = '';
-        }
-    };
+            // 如果详情页打开着，更新详情页中的计数和子任务列表
+            const modal = document.getElementById('taskDetailModal');
+            if (modal.classList.contains('active')) {
+                const task = state.todos.find(t => sameEntityId(t.id, todoId));
+                if (task && task.subtasks && task.subtasks.length > 0) {
+                    const completed = task.subtasks.filter(st => st.completed).length;
+                    document.getElementById('detailSubtaskCount').innerText = `(${completed}/${task.subtasks.length})`;
 
-    // 失去焦点时自动保存
-    input.onblur = () => {
-        saveEdit();
-    };
-};
+                    // 更新子任务列表的显示
+                    const subtaskList = document.getElementById('detailSubtaskList');
+                    subtaskList.innerHTML = task.subtasks.map(st => `
+                        <li class="subtask-item ${st.completed ? 'completed' : ''}">
+                            <input type="checkbox" class="subtask-checkbox" ${st.completed ? 'checked' : ''} onchange="toggleSubtask(${task.id}, ${st.id});">
+                            <span class="subtask-text">${escapeHtml(st.text)}</span>
+                        </li>
+                    `).join('');
+                }
+            }
+        };
+
+window.deleteSubtask = async (todoId, subtaskId) => {
+            const result = await showConfirm('删除子任务', '确定要删除这个子任务吗？');
+            if (result !== 1) return; // 1是第二个按钮（确定）
+
+            state.todos = state.todos.map(t => {
+                if (sameEntityId(t.id, todoId)) {
+                    return {
+                        ...t,
+                        subtasks: t.subtasks.filter(st => !sameEntityId(st.id, subtaskId))
+                    };
+                }
+                return t;
+            });
+            save();
+            renderTodos();
+        };
+
+// 思维导图视图：添加子任务
+window.mmAddSubtask = (todoId) => {
+            const input = document.getElementById('mmSubtaskInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const todo = state.todos.find(t => sameEntityId(t.id, todoId));
+            if (!todo) return;
+
+            if (!todo.subtasks) todo.subtasks = [];
+            todo.subtasks.push({
+                id: uniqueId(),
+                text: text,
+                completed: false
+            });
+
+            save();
+            renderMindmap();
+            showTaskDetail(todo);
+        };
+
+// 开始编辑子任务
+window.startEditSubtask = (todoId, subtaskId) => {
+            const subtaskItem = document.querySelector(`li[data-subtask-id="${subtaskId}"]`);
+            const subtaskText = subtaskItem.querySelector('.subtask-text');
+            const currentText = subtaskText.textContent;
+
+            // 创建编辑输入框
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentText;
+            input.className = 'subtask-edit-input';
+            input.style.cssText = 'flex: 1; padding: 4px 8px; border: 2px solid var(--accent-color); border-radius: var(--radius); font-size: 0.9rem;';
+
+            // 替换文本为输入框
+            subtaskText.style.display = 'none';
+            subtaskItem.insertBefore(input, subtaskText.nextSibling);
+            input.focus();
+            input.select();
+
+            // 保存编辑的函数
+            const saveEdit = () => {
+                const newText = input.value.trim();
+                if (newText) {
+                    state.todos = state.todos.map(t => {
+                        if (sameEntityId(t.id, todoId)) {
+                            return {
+                                ...t,
+                                subtasks: t.subtasks.map(st => {
+                                    if (sameEntityId(st.id, subtaskId)) {
+                                        return { ...st, text: newText };
+                                    }
+                                    return st;
+                                })
+                            };
+                        }
+                        return t;
+                    });
+                    save();
+                    renderTodos();
+                } else {
+                    // 如果为空，恢复原样
+                    input.remove();
+                    subtaskText.style.display = '';
+                }
+            };
+
+            // 按Enter保存，按Esc取消
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveEdit();
+                } else if (e.key === 'Escape') {
+                    input.remove();
+                    subtaskText.style.display = '';
+                }
+            };
+
+            // 失去焦点时自动保存
+            input.onblur = () => {
+                saveEdit();
+            };
+        };
 
 function updateStats() {
     let list = state.todos;
@@ -1363,145 +1370,144 @@ function onKanbanColumnDragLeave(e) {
 }
 
 function onKanbanColumnDrop(e, status) {
-    e.preventDefault();
-    e.currentTarget.style.background = '';
-    e.currentTarget.style.opacity = '';
+            e.preventDefault();
+            e.currentTarget.style.background = '';
+            e.currentTarget.style.opacity = '';
 
-    if (!draggedKanbanCardId) return;
+            if (!draggedKanbanCardId) return;
 
-    // 更新任务状态
-    state.todos = state.todos.map(t => {
-        if (t.id === draggedKanbanCardId) {
-            if (status === 'completed') {
-                return { ...t, completed: true, kanbanStatus: null };
-            } else if (status === 'todo') {
-                return { ...t, completed: false, kanbanStatus: null };
-            } else if (status === 'in-progress') {
-                return { ...t, completed: false, kanbanStatus: 'in-progress' };
-            }
+            // 更新任务状态
+            state.todos = state.todos.map(t => {
+                if (sameEntityId(t.id, draggedKanbanCardId)) {
+                    if (status === 'completed') {
+                        return { ...t, completed: true, kanbanStatus: null };
+                    } else if (status === 'todo') {
+                        return { ...t, completed: false, kanbanStatus: null };
+                    } else if (status === 'in-progress') {
+                        return { ...t, completed: false, kanbanStatus: 'in-progress' };
+                    }
+                }
+                return t;
+            });
+
+            save();
+            renderKanban();
+            showSyncToast('已移动任务');
         }
-        return t;
-    });
-
-    save();
-    renderKanban();
-    showSyncToast('已移动任务');
-}
 
 // ========== 连线视图 ==========
 function renderConnectionView() {
-    const canvas = document.getElementById('connectionCanvas');
-    const svg = document.getElementById('connectionSvg');
-    canvas.innerHTML = '';
-    svg.innerHTML = '';
+            const canvas = document.getElementById('connectionCanvas');
+            const svg = document.getElementById('connectionSvg');
+            canvas.innerHTML = '';
+            svg.innerHTML = '';
 
-    // 获取并过滤任务
-    let list = state.todos.filter(t => !t.projectId);
-    if (state.currentGroupId && state.currentGroupId !== 'all') {
-        list = list.filter(t => t.groupId === state.currentGroupId);
-    }
-    if (state.filter === 'active') list = list.filter(t => !t.completed);
-    if (state.filter === 'completed') list = list.filter(t => t.completed);
-    if (state.sortByDDL === 'time') {
-        list.sort((a, b) => {
-            const da = a.date ? new Date(a.date) : new Date('9999-12-31');
-            const db = b.date ? new Date(b.date) : new Date('9999-12-31');
-            return da - db;
-        });
-    } else if (state.sortByDDL === 'priority') {
-        const pOrder = { high: 0, medium: 1, low: 2 };
-        list.sort((a, b) => {
-            const pa = pOrder[a.priority] ?? 1;
-            const pb = pOrder[b.priority] ?? 1;
-            if (pa !== pb) return pa - pb;
-            const da = a.date ? new Date(a.date) : new Date('9999-12-31');
-            const db = b.date ? new Date(b.date) : new Date('9999-12-31');
-            return da - db;
-        });
-    }
+            // 获取并过滤任务
+            let list = state.todos.filter(t => !t.projectId);
+            if (state.currentGroupId && state.currentGroupId !== 'all') {
+                list = list.filter(t => t.groupId === state.currentGroupId);
+            }
+            if (state.filter === 'active') list = list.filter(t => !t.completed);
+            if (state.filter === 'completed') list = list.filter(t => t.completed);
+            if (state.sortByDDL === 'time') {
+                list.sort((a, b) => {
+                    const da = a.date ? new Date(a.date) : new Date('9999-12-31');
+                    const db = b.date ? new Date(b.date) : new Date('9999-12-31');
+                    return da - db;
+                });
+            } else if (state.sortByDDL === 'priority') {
+                const pOrder = { high: 0, medium: 1, low: 2 };
+                list.sort((a, b) => {
+                    const pa = pOrder[a.priority] ?? 1;
+                    const pb = pOrder[b.priority] ?? 1;
+                    if (pa !== pb) return pa - pb;
+                    const da = a.date ? new Date(a.date) : new Date('9999-12-31');
+                    const db = b.date ? new Date(b.date) : new Date('9999-12-31');
+                    return da - db;
+                });
+            }
 
-    // 按分组聚合
-    const groupMap = {};
-    list.forEach(t => {
-        const gId = t.groupId || 'default';
-        if (!groupMap[gId]) groupMap[gId] = [];
-        groupMap[gId].push(t);
-    });
-
-    const groupIds = Object.keys(groupMap);
-    if (groupIds.length === 0) {
-        canvas.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);font-size:1.1rem;"><i class="fas fa-project-diagram" style="font-size:2rem;margin-bottom:15px;display:block;opacity:0.3;"></i>当前无任务可展示</div>';
-        return;
-    }
-
-    // 布局参数
-    const GROUP_W = 160, GROUP_H = 50;
-    const TASK_W = 220, TASK_H = 40;
-    const H_GAP = 200, V_GAP = 12;
-    const START_X = 40, TASK_X = START_X + GROUP_W + H_GAP;
-    let currentY = 30;
-    const connections = [];
-
-    groupIds.forEach(gId => {
-        const group = state.groups.find(g => g.id === gId) || { id: gId, name: '默认', color: '#3b82f6' };
-        const tasks = groupMap[gId];
-        const groupCenterY = currentY + Math.max(tasks.length * (TASK_H + V_GAP) - V_GAP, GROUP_H) / 2 - GROUP_H / 2;
-
-        // 分组节点
-        const gNode = document.createElement('div');
-        gNode.style.cssText = `position:absolute;left:${START_X}px;top:${groupCenterY}px;width:${GROUP_W}px;height:${GROUP_H}px;background:var(--card-bg);border:3px solid ${group.color};border-radius:var(--radius);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:0.85rem;text-transform:uppercase;cursor:pointer;transition:all 0.2s;`;
-        gNode.innerHTML = `<div style="width:10px;height:10px;border-radius:50%;background:${group.color};"></div>${group.name} <span style="color:var(--text-secondary);font-size:0.7rem;">(${tasks.length})</span>`;
-        gNode.onmouseenter = () => { gNode.style.transform = 'scale(1.03)'; gNode.style.boxShadow = `0 4px 16px ${group.color}33`; };
-        gNode.onmouseleave = () => { gNode.style.transform = ''; gNode.style.boxShadow = ''; };
-        canvas.appendChild(gNode);
-
-        // 任务节点
-        tasks.forEach((task, ti) => {
-            const taskY = currentY + ti * (TASK_H + V_GAP);
-            const pColor = { high: 'var(--danger-color)', medium: 'var(--warning-color)', low: 'var(--success-color)' }[task.priority] || 'var(--warning-color)';
-            const tNode = document.createElement('div');
-            tNode.style.cssText = `position:absolute;left:${TASK_X}px;top:${taskY}px;width:${TASK_W}px;min-height:${TASK_H}px;background:var(--card-bg);border:2px solid var(--border-color);border-left:4px solid ${pColor};border-radius:var(--radius);display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:0.8rem;cursor:default;transition:all 0.2s;${task.completed ? 'opacity:0.5;' : ''}`;
-            tNode.innerHTML = `
-                <input type="checkbox" ${task.completed ? 'checked' : ''} onclick="toggleTodo(${task.id});setTimeout(()=>renderConnectionView(),100);" style="cursor:pointer;width:16px;height:16px;">
-                <div style="flex:1;overflow:hidden;">
-                    <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${task.completed ? 'text-decoration:line-through;' : ''}">${task.text}</div>
-                    <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">${task.date ? task.date.substring(5) : ''} ${task.startTime || ''}</div>
-                </div>`;
-            tNode.onmouseenter = () => { tNode.style.borderColor = pColor; tNode.style.transform = 'translateX(3px)'; };
-            tNode.onmouseleave = () => { tNode.style.borderColor = 'var(--border-color)'; tNode.style.transform = ''; };
-            canvas.appendChild(tNode);
-
-            // 连线数据
-            connections.push({
-                fromX: START_X + GROUP_W, fromY: groupCenterY + GROUP_H / 2,
-                toX: TASK_X, toY: taskY + TASK_H / 2,
-                color: group.color
+            // 按分组聚合
+            const groupMap = {};
+            list.forEach(t => {
+                const gId = t.groupId || 'default';
+                if (!groupMap[gId]) groupMap[gId] = [];
+                groupMap[gId].push(t);
             });
-        });
 
-        currentY += Math.max(tasks.length * (TASK_H + V_GAP), GROUP_H + V_GAP) + 30;
-    });
+            const groupIds = Object.keys(groupMap);
+            if (groupIds.length === 0) {
+                canvas.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);font-size:1.1rem;"><i class="fas fa-project-diagram" style="font-size:2rem;margin-bottom:15px;display:block;opacity:0.3;"></i>当前无任务可展示</div>';
+                return;
+            }
 
-    // 设置画布高度
-    const totalH = currentY + 30;
-    canvas.style.height = totalH + 'px';
-    svg.style.height = totalH + 'px';
-    const container = document.getElementById('connectionView');
-    container.style.minHeight = totalH + 'px';
+            // 布局参数
+            const GROUP_W = 160, GROUP_H = 50;
+            const TASK_W = 220, TASK_H = 40;
+            const H_GAP = 200, V_GAP = 12;
+            const START_X = 40, TASK_X = START_X + GROUP_W + H_GAP;
+            let currentY = 30;
+            const connections = [];
 
-    // 绘制贝塞尔曲线
-    connections.forEach(c => {
-        const midX = (c.fromX + c.toX) / 2;
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', `M ${c.fromX} ${c.fromY} C ${midX} ${c.fromY}, ${midX} ${c.toY}, ${c.toX} ${c.toY}`);
-        path.setAttribute('stroke', c.color);
-        path.setAttribute('stroke-width', '2');
-        path.setAttribute('fill', 'none');
-        path.setAttribute('stroke-opacity', '0.5');
-        svg.appendChild(path);
-    });
-}
+            groupIds.forEach(gId => {
+                const group = state.groups.find(g => sameEntityId(g.id, gId)) || { id: gId, name: '默认', color: '#3b82f6' };
+                const tasks = groupMap[gId];
+                const groupCenterY = currentY + Math.max(tasks.length * (TASK_H + V_GAP) - V_GAP, GROUP_H) / 2 - GROUP_H / 2;
+
+                // 分组节点
+                const gNode = document.createElement('div');
+                gNode.style.cssText = `position:absolute;left:${START_X}px;top:${groupCenterY}px;width:${GROUP_W}px;height:${GROUP_H}px;background:var(--card-bg);border:3px solid ${group.color};border-radius:var(--radius);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:0.85rem;text-transform:uppercase;cursor:pointer;transition:all 0.2s;`;
+                gNode.innerHTML = `<div style="width:10px;height:10px;border-radius:50%;background:${group.color};"></div>${group.name} <span style="color:var(--text-secondary);font-size:0.7rem;">(${tasks.length})</span>`;
+                gNode.onmouseenter = () => { gNode.style.transform = 'scale(1.03)'; gNode.style.boxShadow = `0 4px 16px ${group.color}33`; };
+                gNode.onmouseleave = () => { gNode.style.transform = ''; gNode.style.boxShadow = ''; };
+                canvas.appendChild(gNode);
+
+                // 任务节点
+                tasks.forEach((task, ti) => {
+                    const taskY = currentY + ti * (TASK_H + V_GAP);
+                    const pColor = { high: 'var(--danger-color)', medium: 'var(--warning-color)', low: 'var(--success-color)' }[task.priority] || 'var(--warning-color)';
+                    const tNode = document.createElement('div');
+                    tNode.style.cssText = `position:absolute;left:${TASK_X}px;top:${taskY}px;width:${TASK_W}px;min-height:${TASK_H}px;background:var(--card-bg);border:2px solid var(--border-color);border-left:4px solid ${pColor};border-radius:var(--radius);display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:0.8rem;cursor:default;transition:all 0.2s;${task.completed ? 'opacity:0.5;' : ''}`;
+                    tNode.innerHTML = `
+                        <input type="checkbox" ${task.completed ? 'checked' : ''} onclick="toggleTodo(${task.id});setTimeout(()=>renderConnectionView(),100);" style="cursor:pointer;width:16px;height:16px;">
+                        <div style="flex:1;overflow:hidden;">
+                            <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${task.completed ? 'text-decoration:line-through;' : ''}">${task.text}</div>
+                            <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">${task.date ? task.date.substring(5) : ''} ${task.startTime || ''}</div>
+                        </div>`;
+                    tNode.onmouseenter = () => { tNode.style.borderColor = pColor; tNode.style.transform = 'translateX(3px)'; };
+                    tNode.onmouseleave = () => { tNode.style.borderColor = 'var(--border-color)'; tNode.style.transform = ''; };
+                    canvas.appendChild(tNode);
+
+                    // 连线数据
+                    connections.push({
+                        fromX: START_X + GROUP_W, fromY: groupCenterY + GROUP_H / 2,
+                        toX: TASK_X, toY: taskY + TASK_H / 2,
+                        color: group.color
+                    });
+                });
+
+                currentY += Math.max(tasks.length * (TASK_H + V_GAP), GROUP_H + V_GAP) + 30;
+            });
+
+            // 设置画布高度
+            const totalH = currentY + 30;
+            canvas.style.height = totalH + 'px';
+            svg.style.height = totalH + 'px';
+            const container = document.getElementById('connectionView');
+            container.style.minHeight = totalH + 'px';
+
+            // 绘制贝塞尔曲线
+            connections.forEach(c => {
+                const midX = (c.fromX + c.toX) / 2;
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', `M ${c.fromX} ${c.fromY} C ${midX} ${c.fromY}, ${midX} ${c.toY}, ${c.toX} ${c.toY}`);
+                path.setAttribute('stroke', c.color);
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke-opacity', '0.5');
+                svg.appendChild(path);
+            });
+        }
 
 document.getElementById('addBtn').onclick = addTodo;
 document.getElementById('todoInput').onkeypress = e => { if (e.key === 'Enter') addTodo(); };
-

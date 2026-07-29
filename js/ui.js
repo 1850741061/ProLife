@@ -243,25 +243,25 @@ window.handleMobileTodoNav = function () {
 
 // 更新移动端分组按钮显示的当前分组名称
 function updateMobileGroupToggle() {
-    if (window.innerWidth <= 768) {
-        const groupToggle = document.getElementById('mobileGroupToggle');
-        const currentGroupNameSpan = document.getElementById('currentGroupName');
+            if (window.innerWidth <= 768) {
+                const groupToggle = document.getElementById('mobileGroupToggle');
+                const currentGroupNameSpan = document.getElementById('currentGroupName');
 
-        if (groupToggle) {
-            groupToggle.style.display = 'block';
+                if (groupToggle) {
+                    groupToggle.style.display = 'block';
 
-            if (state.currentGroupId === 'all') {
-                currentGroupNameSpan.textContent = '全部';
+                    if (state.currentGroupId === 'all') {
+                        currentGroupNameSpan.textContent = '全部';
+                    } else {
+                        const group = state.groups.find(g => sameEntityId(g.id, state.currentGroupId));
+                        currentGroupNameSpan.textContent = group ? group.name : '全部';
+                    }
+                }
             } else {
-                const group = state.groups.find(g => g.id === state.currentGroupId);
-                currentGroupNameSpan.textContent = group ? group.name : '全部';
+                const groupToggle = document.getElementById('mobileGroupToggle');
+                if (groupToggle) groupToggle.style.display = 'none';
             }
         }
-    } else {
-        const groupToggle = document.getElementById('mobileGroupToggle');
-        if (groupToggle) groupToggle.style.display = 'none';
-    }
-}
 
 // 窗口大小改变时更新
 window.addEventListener('resize', updateMobileGroupToggle);
@@ -328,5 +328,4 @@ function updateInputSectionVisibility() {
         inputSection.classList.remove('collapsed');
     }
 }
-
 

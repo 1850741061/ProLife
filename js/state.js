@@ -4,7 +4,19 @@ const DATA_VERSION = 1;
 const DATA_VERSION_KEY = 'dataVersion';
 
 let _idCounter = 0;
-function uniqueId() { return Date.now() * 1000 + (++_idCounter % 1000); }
+function uniqueId() {
+    const counter = (++_idCounter % 0x100000).toString(36);
+    const random = globalThis.crypto?.randomUUID?.().replace(/-/g, '').slice(0, 10)
+        || Math.random().toString(36).slice(2, 12);
+    return `${Date.now().toString(36)}_${counter}_${random}`;
+}
+function uniqueDrinkId(type) { return `${type}_${uniqueId()}`; }
+
+function sameEntityId(left, right) {
+            if (left == null && right == null) return true;
+            if (left == null || right == null) return false;
+            return String(left) === String(right);
+        }
 
 // 数据迁移机制
 const migrations = [];

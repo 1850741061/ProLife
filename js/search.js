@@ -230,28 +230,28 @@ function createSearchResultItem(item, query) {
 
 // 高亮显示记账记录
 function highlightTransaction(id) {
-    const items = document.querySelectorAll('.transaction-item');
-    items.forEach(item => {
-        if (parseInt(item.dataset.id) === id) {
-            // 高亮效果
-            item.style.animation = 'none';
-            item.offsetHeight; // 触发重绘
-            item.style.animation = 'highlight-pulse 1s ease-in-out 2';
-            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else {
-            // 其他项变暗
-            item.style.opacity = '0.3';
-        }
-    });
+            const items = document.querySelectorAll('.transaction-item');
+            items.forEach(item => {
+                if (sameFinanceTransactionId(item.dataset.id, id)) {
+                    // 高亮效果
+                    item.style.animation = 'none';
+                    item.offsetHeight; // 触发重绘
+                    item.style.animation = 'highlight-pulse 1s ease-in-out 2';
+                    item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    // 其他项变暗
+                    item.style.opacity = '0.3';
+                }
+            });
 
-    // 2秒后恢复
-    setTimeout(() => {
-        items.forEach(item => {
-            item.style.opacity = '';
-            item.style.animation = '';
-        });
-    }, 2000);
-}
+            // 2秒后恢复
+            setTimeout(() => {
+                items.forEach(item => {
+                    item.style.opacity = '';
+                    item.style.animation = '';
+                });
+            }, 2000);
+        }
 
 // 处理搜索结果点击
 document.addEventListener('click', (e) => {
@@ -259,7 +259,7 @@ document.addEventListener('click', (e) => {
     if (!searchItem) return;
 
     const type = searchItem.dataset.type;
-    const id = parseInt(searchItem.dataset.id);
+    const id = searchItem.dataset.id;
 
     closeModal('globalSearchModal');
 
@@ -271,7 +271,7 @@ document.addEventListener('click', (e) => {
         setTimeout(() => highlightTransaction(id), 100);
     } else if (type === 'template') {
         switchView('todo');
-        setTimeout(() => applyTemplate(id), 100);
+        setTimeout(() => createFromTemplate(id), 100);
     } else if (type === 'project') {
         // 打开项目模态框并定位到该项目
         openModal('projectModal');
@@ -289,4 +289,3 @@ document.addEventListener('click', (e) => {
 
 // --- 归档功能 ---
 let selectedArchivedTodos = new Set();
-

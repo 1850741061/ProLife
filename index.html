@@ -3,8 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; media-src 'self'; connect-src 'self' https://gcrdheovyzjywwyijjli.supabase.co wss://gcrdheovyzjywwyijjli.supabase.co; worker-src 'self' blob:; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Todo | 待办 & 记账</title>
+    <link rel="icon" type="image/png" href="./assets/icon_32.png">
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#6c5ce7">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Press+Start+2P&family=Space+Grotesk:wght@400;500;700&family=VT323&display=swap"
         rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
 
     <!-- CSS -->
     <link rel="stylesheet" href="./css/styles.css">
@@ -2041,9 +2043,8 @@
     </div>
 
 
-    <!-- JS: Vite bundled entry (only used by Vite dev server) -->
-    <script type="module" src="/src/entry.js"></script>
-    <!-- JS: Synchronous script tags (used by Electron / direct file access) -->
+    <!-- JS: Synchronous source modules for Electron/direct file access.
+         Vite replaces these with one classic app-bundle.js for Web builds. -->
     <script src="./js/config.js"></script>
     <script src="./js/state.js"></script>
     <script src="./js/utils.js"></script>
@@ -2075,7 +2076,7 @@
     <script src="./js/import-export.js"></script>
     <script src="./js/app.js"></script>
     <script src="./js/pubsub.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7" integrity="sha384-BmlQlKlDvXvKoxkn5OQuUo/aJQCTXeB+Kls6EccBmG4Kf8AXvp89RtO9MtPxP/r5" crossorigin="anonymous"></script>
     <script src="./js/sync.js"></script>
     <!-- Service Worker Registration -->
     <script>

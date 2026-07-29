@@ -416,41 +416,122 @@ window.openEditTransaction = (id) => {
 };
 
 window.saveEditTransaction = () => {
-    if (!state.editingTransId) return;
-    const type = getCustomSelectValue('editTransTypeCustom');
-    const date = document.getElementById('editTransDate').value;
-    const category = getCustomSelectValue('editTransCategoryCustom');
-    const amount = document.getElementById('editTransAmount').value;
-    const note = document.getElementById('editTransNote').value.trim();
+            if (!state.editingTransId) return;
+            let type = getCustomSelectValue('editTransTypeCustom');
+            const date = document.getElementById('editTransDate').value;
+            let category = getCustomSelectValue('editTransCategoryCustom');
+            const amount = document.getElementById('editTransAmount').value;
+            const note = document.getElementById('editTransNote').value.trim();
 
-    if (!category || !amount || !date) return showSyncToast('请填写完整', 'error');
+            if (!category || !amount || !date) return showSyncToast('请填写完整', 'error');
 
-    // 更新颜色
-    const catObj = getAllCategories().find(c => c.name === category);
+            const original = state.transactions.find(t => sameFinanceTransactionId(t.id, state.editingTransId));
+            const now = new Date().toISOString();
+            let replacement = original ? { ...original } : null;
+            if (replacement?.milkteaRecordId != null) {
+                // Linked drink transactions must always remain expenses. Allowing
+                // them to become income breaks the shared drink/finance invariant.
+                type = 'expense';
+                const oldLinkedId = String(replacement.milkteaRecordId);
+                const oldDrinkType = detectDrinkTypeForTransaction(replacement, oldLinkedId);
+                const nextDrinkType = category === '咖啡'
+                    ? 'coffee'
+                    : category === '奶茶'
+                        ? 'milktea'
+                        : oldDrinkType;
+                category = nextDrinkType === 'coffee' ? '咖啡' : '奶茶';
+                const oldCollection = oldDrinkType === 'coffee' ? state.coffee : state.milktea;
+                const nextCollection = nextDrinkType === 'coffee' ? state.coffee : state.milktea;
+                const oldRecord = ensureSyncArray(oldCollection.records)
+                    .find(record => String(record.id) === oldLinkedId);
+                if (oldRecord) {
+                    const movingType = oldDrinkType !== nextDrinkType;
+                    const nextLinkedId = movingType ? uniqueDrinkId(nextDrinkType) : oldLinkedId;
+                    const cups = Number(oldRecord.amount) > 0 ? Number(oldRecord.amount) : 1;
+                    const totalCost = Number(amount) || 0;
+                    const updatedRecord = normalizeDrinkRecord({
+                        ...oldRecord,
+                        id: nextLinkedId,
+                        date,
+                        cost: totalCost,
+                        price: totalCost / cups,
+                        drinkType: nextDrinkType,
+                        updatedAt: now
+                    }, nextDrinkType);
+                    oldCollection.records = ensureSyncArray(oldCollection.records)
+                        .filter(record => String(record.id) !== oldLinkedId);
+                    nextCollection.records = [
+                        ...ensureSyncArray(nextCollection.records)
+                            .filter(record => String(record.id) !== nextLinkedId),
+                        updatedRecord
+                    ];
+                    if (movingType) {
+                        state.deletedIds.push(
+                            drinkRecordTombstone(oldDrinkType, oldLinkedId),
+                            financeTransactionTombstone(replacement)
+                        );
+                    }
+                    replacement.milkteaRecordId = nextLinkedId;
+                    replacement.id = 'mt_' + nextLinkedId;
+                }
+            }
 
-    state.transactions = state.transactions.map(t => sameFinanceTransactionId(t.id, state.editingTransId) ? {
-        ...t, type, date, category, amount, note, catColor: catObj.color
-    } : t);
+            const catObj = getAllCategories().find(c => c.name === category);
+            if (replacement) {
+                replacement = {
+                    ...replacement,
+                    type,
+                    date,
+                    category,
+                    amount,
+                    note,
+                    catColor: catObj?.color || replacement.catColor,
+                    updatedAt: now
+                };
+            }
+            state.transactions = state.transactions.map(t =>
+                sameFinanceTransactionId(t.id, state.editingTransId)
+                    ? (replacement || {
+                        ...t,
+                        type,
+                        date,
+                        category,
+                        amount,
+                        note,
+                        catColor: catObj?.color || t.catColor,
+                        updatedAt: now
+                    })
+                    : t
+            );
+            state.deletedIds = [...new Set(state.deletedIds)];
 
-    save();
-    closeModal('transModal');
-    state.editingTransId = null;
-    renderFinance();
-};
+            save();
+            closeModal('transModal');
+            state.editingTransId = null;
+            renderFinance();
+        };
 
 window.deleteEditTransaction = async () => {
-    const confirmed = await showConfirm('删除记录', '确定删除此记录？');
-    if (confirmed === 0) return;
-    // 记录删除ID
-    if (!state.deletedIds.some(id => sameFinanceTransactionId(id, state.editingTransId) || id === state.editingTransId)) {
-        state.deletedIds.push(state.editingTransId);
-    }
-    state.transactions = state.transactions.filter(t => !sameFinanceTransactionId(t.id, state.editingTransId));
-    save();
-    closeModal('transModal');
-    state.editingTransId = null;
-    renderFinance();
-};
+            const confirmed = await showConfirm('删除记录', '确定删除此记录？', ['取消', '删除']);
+            if (confirmed === 0) return;
+            const deletedTransaction = state.transactions.find(t => sameFinanceTransactionId(t.id, state.editingTransId));
+            const tombstone = financeTransactionTombstone(deletedTransaction || state.editingTransId);
+            if (!state.deletedIds.includes(tombstone)) state.deletedIds.push(tombstone);
+            if (deletedTransaction?.milkteaRecordId != null) {
+                const linkedId = String(deletedTransaction.milkteaRecordId);
+                const drinkType = detectDrinkTypeForTransaction(deletedTransaction, linkedId);
+                const collection = drinkType === 'coffee' ? state.coffee : state.milktea;
+                collection.records = ensureSyncArray(collection.records)
+                    .filter(record => String(record.id) !== linkedId);
+                const drinkTombstone = drinkRecordTombstone(drinkType, linkedId);
+                if (!state.deletedIds.includes(drinkTombstone)) state.deletedIds.push(drinkTombstone);
+            }
+            state.transactions = state.transactions.filter(t => !sameFinanceTransactionId(t.id, state.editingTransId));
+            save();
+            closeModal('transModal');
+            state.editingTransId = null;
+            renderFinance();
+        };
 
 // ========== 分类管理功能 ==========
 let currentCategoryManagerType = 'expense'; // 'expense' or 'income'

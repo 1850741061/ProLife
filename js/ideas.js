@@ -54,48 +54,48 @@ window.toggleIdeasPanel = function(forceOpen) {
 };
 
 window.quickAddIdea = function() {
-    const text = document.getElementById('ideaQuickText').value.trim();
-    if (!text) return;
-    const linkVal = document.getElementById('ideaPanelLink').value;
-    let linkedId = null, linkedType = null, linkedName = null;
-    if (linkVal.startsWith('todo:')) {
-        const tid = Number(linkVal.split(':')[1]);
-        const task = state.todos.find(t => t.id === tid);
-        linkedId = tid; linkedType = 'task';
-        linkedName = task ? task.text.substring(0, 30) : '';
-    } else if (linkVal.startsWith('project:')) {
-        const pid = linkVal.split(':')[1];
-        const project = state.projects.find(p => String(p.id) === pid);
-        linkedId = pid; linkedType = 'project';
-        linkedName = project ? project.name : '';
-    } else if (linkVal.startsWith('group:')) {
-        const gid = linkVal.split(':')[1];
-        const group = state.groups.find(g => String(g.id) === gid);
-        linkedId = gid; linkedType = 'group';
-        linkedName = group ? group.name : '';
-    }
-    const idea = {
-        id: uniqueId(),
-        text,
-        tags: [..._pendingIdeaTags],
-        linkedId, linkedType, linkedName,
-        pinned: false,
-        important: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    };
-    state.ideas.unshift(idea);
-    syncIdeaTags();
-    _pendingIdeaTags = [];
-    document.getElementById('ideaQuickText').value = '';
-    document.getElementById('ideaTagInput').value = '';
-    renderIdeaQuickTags();
-    setIdeaLinkValue('ideaPanelLinkCustom', 'ideaPanelLink', '', '关联 (可选)');
-    save();
-    renderIdeasPanel();
-    updateIdeasSidebarCount();
-    showSyncToast('已记录');
-};
+            const text = document.getElementById('ideaQuickText').value.trim();
+            if (!text) return;
+            const linkVal = document.getElementById('ideaPanelLink').value;
+            let linkedId = null, linkedType = null, linkedName = null;
+            if (linkVal.startsWith('todo:')) {
+                const tid = Number(linkVal.split(':')[1]);
+                const task = state.todos.find(t => sameEntityId(t.id, tid));
+                linkedId = tid; linkedType = 'task';
+                linkedName = task ? task.text.substring(0, 30) : '';
+            } else if (linkVal.startsWith('project:')) {
+                const pid = linkVal.split(':')[1];
+                const project = state.projects.find(p => String(p.id) === pid);
+                linkedId = pid; linkedType = 'project';
+                linkedName = project ? project.name : '';
+            } else if (linkVal.startsWith('group:')) {
+                const gid = linkVal.split(':')[1];
+                const group = state.groups.find(g => String(g.id) === gid);
+                linkedId = gid; linkedType = 'group';
+                linkedName = group ? group.name : '';
+            }
+            const idea = {
+                id: uniqueId(),
+                text,
+                tags: [..._pendingIdeaTags],
+                linkedId, linkedType, linkedName,
+                pinned: false,
+                important: false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            state.ideas.unshift(idea);
+            syncIdeaTags();
+            _pendingIdeaTags = [];
+            document.getElementById('ideaQuickText').value = '';
+            document.getElementById('ideaTagInput').value = '';
+            renderIdeaQuickTags();
+            setIdeaLinkValue('ideaPanelLinkCustom', 'ideaPanelLink', '', '关联 (可选)');
+            save();
+            renderIdeasPanel();
+            updateIdeasSidebarCount();
+            showSyncToast('已记录');
+        };
 
 function syncIdeaTags() {
     const allTags = new Set();
@@ -116,45 +116,45 @@ function getFilteredIdeas(filter, filterTag) {
 }
 
 function renderIdeaCard(idea, showActions = true) {
-    const tagHtml = (idea.tags || []).map(t =>
-        `<span class="idea-tag-chip" style="font-size:0.65rem;padding:1px 6px;">${escapeHtml(t)}</span>`
-    ).join('');
-    const linkIcon = idea.linkedType === 'task' ? 'fa-check-circle' : idea.linkedType === 'project' ? 'fa-project-diagram' : idea.linkedType === 'group' ? 'fa-folder' : 'fa-link';
-    let linkHtml = '';
-    if (idea.linkedName) {
-        let dotHtml = '';
-        if (idea.linkedType === 'group') {
-            const g = state.groups.find(g => String(g.id) === String(idea.linkedId));
-            const gc = g ? g.color : '#888';
-            dotHtml = `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${gc};border:1px solid var(--border-color);margin-right:3px;vertical-align:middle;"></span>`;
-        } else if (idea.linkedType === 'project') {
-            const p = state.projects.find(p => String(p.id) === String(idea.linkedId));
-            const pc = p ? (p.color || '#8b5cf6') : '#8b5cf6';
-            dotHtml = `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${pc};margin-right:3px;vertical-align:middle;"></span>`;
+            const tagHtml = (idea.tags || []).map(t =>
+                `<span class="idea-tag-chip" style="font-size:0.65rem;padding:1px 6px;">${escapeHtml(t)}</span>`
+            ).join('');
+            const linkIcon = idea.linkedType === 'task' ? 'fa-check-circle' : idea.linkedType === 'project' ? 'fa-project-diagram' : idea.linkedType === 'group' ? 'fa-folder' : 'fa-link';
+            let linkHtml = '';
+            if (idea.linkedName) {
+                let dotHtml = '';
+                if (idea.linkedType === 'group') {
+                    const g = state.groups.find(g => String(g.id) === String(idea.linkedId));
+                    const gc = g ? g.color : '#888';
+                    dotHtml = `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${gc};border:1px solid var(--border-color);margin-right:3px;vertical-align:middle;"></span>`;
+                } else if (idea.linkedType === 'project') {
+                    const p = state.projects.find(p => String(p.id) === String(idea.linkedId));
+                    const pc = p ? (p.color || '#8b5cf6') : '#8b5cf6';
+                    dotHtml = `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${pc};margin-right:3px;vertical-align:middle;"></span>`;
+                }
+                linkHtml = `<span class="idea-card-link">${dotHtml}<i class="fas ${linkIcon}" style="margin-right:2px;"></i>${escapeHtml(idea.linkedName)}</span>`;
+            }
+            const actionsHtml = showActions ? `
+                <div class="idea-card-actions">
+                    <button class="idea-action-btn ${idea.pinned ? 'pin-active' : ''}" onclick="toggleIdeaPin(${idea.id})" title="置顶"><i class="fas fa-thumbtack"></i></button>
+                    <button class="idea-action-btn ${idea.important ? 'important-active' : ''}" onclick="toggleIdeaImportant(${idea.id})" title="重要"><i class="fas fa-star"></i></button>
+                    <button class="idea-action-btn" onclick="openEditIdea(${idea.id})" title="编辑"><i class="fas fa-pen"></i></button>
+                    <button class="idea-action-btn" onclick="deleteIdea(${idea.id})" title="删除" style="color:var(--danger-color);"><i class="fas fa-trash"></i></button>
+                </div>` : '';
+            const cls = `idea-card${idea.pinned ? ' pinned' : ''}${idea.important ? ' important' : ''}`;
+            const time = new Date(idea.createdAt);
+            const timeStr = `${(time.getMonth()+1).toString().padStart(2,'0')}-${time.getDate().toString().padStart(2,'0')} ${time.getHours().toString().padStart(2,'0')}:${time.getMinutes().toString().padStart(2,'0')}`;
+            return `<div class="${cls}" data-id="${idea.id}">
+                <div class="idea-card-top">
+                    <div class="idea-card-text">${escapeHtml(idea.text)}</div>
+                </div>
+                <div class="idea-card-meta">
+                    <span class="idea-card-time">${timeStr}</span>
+                    ${tagHtml}${linkHtml}
+                </div>
+                ${actionsHtml}
+            </div>`;
         }
-        linkHtml = `<span class="idea-card-link">${dotHtml}<i class="fas ${linkIcon}" style="margin-right:2px;"></i>${escapeHtml(idea.linkedName)}</span>`;
-    }
-    const actionsHtml = showActions ? `
-        <div class="idea-card-actions">
-            <button class="idea-action-btn ${idea.pinned ? 'pin-active' : ''}" onclick="toggleIdeaPin(${idea.id})" title="置顶"><i class="fas fa-thumbtack"></i></button>
-            <button class="idea-action-btn ${idea.important ? 'important-active' : ''}" onclick="toggleIdeaImportant(${idea.id})" title="重要"><i class="fas fa-star"></i></button>
-            <button class="idea-action-btn" onclick="openEditIdea(${idea.id})" title="编辑"><i class="fas fa-pen"></i></button>
-            <button class="idea-action-btn" onclick="deleteIdea(${idea.id})" title="删除" style="color:var(--danger-color);"><i class="fas fa-trash"></i></button>
-        </div>` : '';
-    const cls = `idea-card${idea.pinned ? ' pinned' : ''}${idea.important ? ' important' : ''}`;
-    const time = new Date(idea.createdAt);
-    const timeStr = `${(time.getMonth()+1).toString().padStart(2,'0')}-${time.getDate().toString().padStart(2,'0')} ${time.getHours().toString().padStart(2,'0')}:${time.getMinutes().toString().padStart(2,'0')}`;
-    return `<div class="${cls}" data-id="${idea.id}">
-        <div class="idea-card-top">
-            <div class="idea-card-text">${escapeHtml(idea.text)}</div>
-        </div>
-        <div class="idea-card-meta">
-            <span class="idea-card-time">${timeStr}</span>
-            ${tagHtml}${linkHtml}
-        </div>
-        ${actionsHtml}
-    </div>`;
-}
 
 window.addPendingTag = function(tag) {
     if (!_pendingIdeaTags.includes(tag)) {
@@ -218,46 +218,48 @@ window.setIdeaFilter = function(filter, tag) {
 };
 
 window.toggleIdeaPin = function(id) {
-    const idea = state.ideas.find(i => i.id === id);
-    if (!idea) return;
-    idea.pinned = !idea.pinned;
-    idea.updatedAt = new Date().toISOString();
-    save();
-    renderIdeasPanel();
-    renderIdeasFull();
-};
+            const idea = state.ideas.find(i => sameEntityId(i.id, id));
+            if (!idea) return;
+            idea.pinned = !idea.pinned;
+            idea.updatedAt = new Date().toISOString();
+            save();
+            renderIdeasPanel();
+            renderIdeasFull();
+        };
 
 window.toggleIdeaImportant = function(id) {
-    const idea = state.ideas.find(i => i.id === id);
-    if (!idea) return;
-    idea.important = !idea.important;
-    idea.updatedAt = new Date().toISOString();
-    save();
-    renderIdeasPanel();
-    renderIdeasFull();
-};
+            const idea = state.ideas.find(i => sameEntityId(i.id, id));
+            if (!idea) return;
+            idea.important = !idea.important;
+            idea.updatedAt = new Date().toISOString();
+            save();
+            renderIdeasPanel();
+            renderIdeasFull();
+        };
 
 window.deleteIdea = async function(id) {
-    const confirmed = await showConfirm('删除随想', '确定要删除这条随想吗？', ['取消', '删除']);
-    if (confirmed === 0) return;
-    state.ideas = state.ideas.filter(i => i.id !== id);
-    syncIdeaTags();
-    save();
-    renderIdeasPanel();
-    renderIdeasFull();
-    updateIdeasSidebarCount();
-    try { closeModal('ideaEditModal'); } catch(e) {}
-};
+            const confirmed = await showConfirm('删除随想', '确定要删除这条随想吗？', ['取消', '删除']);
+            if (confirmed === 0) return;
+            state.ideas = state.ideas.filter(i => !sameEntityId(i.id, id));
+            const tombstone = entityTombstone('idea', id);
+            if (!state.deletedIds.includes(tombstone)) state.deletedIds.push(tombstone);
+            syncIdeaTags();
+            save();
+            renderIdeasPanel();
+            renderIdeasFull();
+            updateIdeasSidebarCount();
+            try { closeModal('ideaEditModal'); } catch(e) {}
+        };
 
 window.openEditIdea = function(id) {
-    const idea = state.ideas.find(i => i.id === id);
-    if (!idea) return;
-    currentEditIdeaId = id;
-    document.getElementById('ideaEditText').value = idea.text;
-    document.getElementById('ideaEditTags').value = (idea.tags || []).join(', ');
-    updateIdeaEditLinkSelect(idea);
-    openModal('ideaEditModal');
-};
+            const idea = state.ideas.find(i => sameEntityId(i.id, id));
+            if (!idea) return;
+            currentEditIdeaId = id;
+            document.getElementById('ideaEditText').value = idea.text;
+            document.getElementById('ideaEditTags').value = (idea.tags || []).join(', ');
+            updateIdeaEditLinkSelect(idea);
+            openModal('ideaEditModal');
+        };
 
 function buildIdeaLinkCustomSelect(customId, nativeId, selectedValue) {
     const customSelect = document.getElementById(customId);
@@ -399,43 +401,43 @@ function updateIdeaEditLinkSelect(idea) {
 }
 
 window.saveIdeaEdit = function() {
-    const idea = state.ideas.find(i => i.id === currentEditIdeaId);
-    if (!idea) return;
-    idea.text = document.getElementById('ideaEditText').value.trim();
-    idea.tags = document.getElementById('ideaEditTags').value.split(/[,，]/).map(t => t.trim()).filter(Boolean);
-    const linkVal = document.getElementById('ideaEditLink').value;
-    if (linkVal.startsWith('todo:')) {
-        const taskId = Number(linkVal.split(':')[1]);
-        const task = state.todos.find(t => t.id === taskId);
-        idea.linkedId = taskId;
-        idea.linkedType = 'task';
-        idea.linkedName = task ? task.text.substring(0, 30) : '';
-    } else if (linkVal.startsWith('project:')) {
-        const pid = linkVal.split(':')[1];
-        const project = state.projects.find(p => String(p.id) === pid);
-        idea.linkedId = pid;
-        idea.linkedType = 'project';
-        idea.linkedName = project ? project.name : '';
-    } else if (linkVal.startsWith('group:')) {
-        const gid = linkVal.split(':')[1];
-        const group = state.groups.find(g => String(g.id) === gid);
-        idea.linkedId = gid;
-        idea.linkedType = 'group';
-        idea.linkedName = group ? group.name : '';
-    } else {
-        idea.linkedId = null;
-        idea.linkedType = null;
-        idea.linkedName = null;
-    }
-    idea.updatedAt = new Date().toISOString();
-    syncIdeaTags();
-    save();
-    renderIdeasPanel();
-    renderIdeasFull();
-    updateIdeasSidebarCount();
-    closeModal('ideaEditModal');
-    showSyncToast('已保存');
-};
+            const idea = state.ideas.find(i => sameEntityId(i.id, currentEditIdeaId));
+            if (!idea) return;
+            idea.text = document.getElementById('ideaEditText').value.trim();
+            idea.tags = document.getElementById('ideaEditTags').value.split(/[,，]/).map(t => t.trim()).filter(Boolean);
+            const linkVal = document.getElementById('ideaEditLink').value;
+            if (linkVal.startsWith('todo:')) {
+                const taskId = Number(linkVal.split(':')[1]);
+                const task = state.todos.find(t => sameEntityId(t.id, taskId));
+                idea.linkedId = taskId;
+                idea.linkedType = 'task';
+                idea.linkedName = task ? task.text.substring(0, 30) : '';
+            } else if (linkVal.startsWith('project:')) {
+                const pid = linkVal.split(':')[1];
+                const project = state.projects.find(p => String(p.id) === pid);
+                idea.linkedId = pid;
+                idea.linkedType = 'project';
+                idea.linkedName = project ? project.name : '';
+            } else if (linkVal.startsWith('group:')) {
+                const gid = linkVal.split(':')[1];
+                const group = state.groups.find(g => String(g.id) === gid);
+                idea.linkedId = gid;
+                idea.linkedType = 'group';
+                idea.linkedName = group ? group.name : '';
+            } else {
+                idea.linkedId = null;
+                idea.linkedType = null;
+                idea.linkedName = null;
+            }
+            idea.updatedAt = new Date().toISOString();
+            syncIdeaTags();
+            save();
+            renderIdeasPanel();
+            renderIdeasFull();
+            updateIdeasSidebarCount();
+            closeModal('ideaEditModal');
+            showSyncToast('已保存');
+        };
 
 // 全屏模态相关
 window.openIdeasFullModal = function() {
@@ -446,44 +448,44 @@ window.openIdeasFullModal = function() {
 };
 
 window.addIdeaFromFullModal = function() {
-    const text = document.getElementById('ideasFullText').value.trim();
-    if (!text) return;
-    const tags = document.getElementById('ideasFullTags').value.split(/[,，]/).map(t => t.trim()).filter(Boolean);
-    const linkVal = document.getElementById('ideasFullLinkNative').value;
-    let linkedId = null, linkedType = null, linkedName = null;
-    if (linkVal.startsWith('todo:')) {
-        const taskId = Number(linkVal.split(':')[1]);
-        const task = state.todos.find(t => t.id === taskId);
-        linkedId = taskId; linkedType = 'task';
-        linkedName = task ? task.text.substring(0, 30) : '';
-    } else if (linkVal.startsWith('project:')) {
-        const pid = linkVal.split(':')[1];
-        const project = state.projects.find(p => String(p.id) === pid);
-        linkedId = pid; linkedType = 'project';
-        linkedName = project ? project.name : '';
-    } else if (linkVal.startsWith('group:')) {
-        const gid = linkVal.split(':')[1];
-        const group = state.groups.find(g => String(g.id) === gid);
-        linkedId = gid; linkedType = 'group';
-        linkedName = group ? group.name : '';
-    }
-    const idea = {
-        id: uniqueId(), text, tags,
-        linkedId, linkedType, linkedName,
-        pinned: false, important: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    };
-    state.ideas.unshift(idea);
-    syncIdeaTags();
-    document.getElementById('ideasFullText').value = '';
-    document.getElementById('ideasFullTags').value = '';
-    setIdeaLinkValue('ideasFullLinkCustom', 'ideasFullLinkNative', '', '关联 (可选)');
-    save();
-    renderIdeasFull();
-    updateIdeasSidebarCount();
-    showSyncToast('已添加');
-};
+            const text = document.getElementById('ideasFullText').value.trim();
+            if (!text) return;
+            const tags = document.getElementById('ideasFullTags').value.split(/[,，]/).map(t => t.trim()).filter(Boolean);
+            const linkVal = document.getElementById('ideasFullLinkNative').value;
+            let linkedId = null, linkedType = null, linkedName = null;
+            if (linkVal.startsWith('todo:')) {
+                const taskId = Number(linkVal.split(':')[1]);
+                const task = state.todos.find(t => sameEntityId(t.id, taskId));
+                linkedId = taskId; linkedType = 'task';
+                linkedName = task ? task.text.substring(0, 30) : '';
+            } else if (linkVal.startsWith('project:')) {
+                const pid = linkVal.split(':')[1];
+                const project = state.projects.find(p => String(p.id) === pid);
+                linkedId = pid; linkedType = 'project';
+                linkedName = project ? project.name : '';
+            } else if (linkVal.startsWith('group:')) {
+                const gid = linkVal.split(':')[1];
+                const group = state.groups.find(g => String(g.id) === gid);
+                linkedId = gid; linkedType = 'group';
+                linkedName = group ? group.name : '';
+            }
+            const idea = {
+                id: uniqueId(), text, tags,
+                linkedId, linkedType, linkedName,
+                pinned: false, important: false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            state.ideas.unshift(idea);
+            syncIdeaTags();
+            document.getElementById('ideasFullText').value = '';
+            document.getElementById('ideasFullTags').value = '';
+            setIdeaLinkValue('ideasFullLinkCustom', 'ideasFullLinkNative', '', '关联 (可选)');
+            save();
+            renderIdeasFull();
+            updateIdeasSidebarCount();
+            showSyncToast('已添加');
+        };
 
 window.setIdeaFullView = function(view) {
     state.ideaFullView = view;

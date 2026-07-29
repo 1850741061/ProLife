@@ -8,8 +8,103 @@ let widgetTray = null;
 let mainTray = null;
 let isQuitting = false;
 
-const SETTINGS_FILE = path.join(process.env.APPDATA || '', 'ProLife', 'settings.json');
+const LEGACY_SHARED_DIR = path.join(process.env.APPDATA || '', 'ProLife');
+const APP_AUX_DIR = path.join(process.env.APPDATA || '', 'ProLife-Rebuild');
+const SETTINGS_FILE = path.join(APP_AUX_DIR, 'settings.json');
+const WIDGET_DATA_FILE = path.join(APP_AUX_DIR, 'widget-data.json');
+const MAX_WIDGET_DATA_BYTES = 20 * 1024 * 1024;
 const APP_DIR = __dirname;
+
+function isTrustedRenderer(event) {
+    const sender = event?.sender;
+    return !!sender && (
+        (mainWindow && !mainWindow.isDestroyed() && sender === mainWindow.webContents)
+        || (widgetWindow && !widgetWindow.isDestroyed() && sender === widgetWindow.webContents)
+    );
+}
+
+function containsSensitiveWidgetKey(value, seen = new Set()) {
+    if (!value || typeof value !== 'object' || seen.has(value)) return false;
+    seen.add(value);
+    for (const [key, nested] of Object.entries(value)) {
+        if (/^(auth|session|access_?token|refresh_?token|authorization|apikey|supabase_?(anon_?)?key)$/i.test(key)) {
+            return true;
+        }
+        if (containsSensitiveWidgetKey(nested, seen)) return true;
+    }
+    return false;
+}
+
+function readWidgetDataText() {
+    try {
+        if (!fs.existsSync(WIDGET_DATA_FILE)) return null;
+        const value = fs.readFileSync(WIDGET_DATA_FILE, 'utf8');
+        if (Buffer.byteLength(value, 'utf8') > MAX_WIDGET_DATA_BYTES) return null;
+        JSON.parse(value);
+        return value;
+    } catch (error) {
+        console.warn('[Widget Data] 读取失败:', error);
+        return null;
+    }
+}
+
+function writeWidgetDataText(input) {
+    try {
+        const parsed = typeof input === 'string' ? JSON.parse(input) : input;
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            throw new TypeError('widget data must be an object');
+        }
+        if (containsSensitiveWidgetKey(parsed)) {
+            throw new TypeError('widget data must not contain credentials');
+        }
+        const serialized = JSON.stringify(parsed);
+        if (Buffer.byteLength(serialized, 'utf8') > MAX_WIDGET_DATA_BYTES) {
+            throw new RangeError('widget data is too large');
+        }
+        fs.mkdirSync(APP_AUX_DIR, { recursive: true });
+        const temporaryFile = `${WIDGET_DATA_FILE}.tmp`;
+        const backupFile = `${WIDGET_DATA_FILE}.bak`;
+        fs.writeFileSync(temporaryFile, serialized, { encoding: 'utf8', mode: 0o600 });
+        if (fs.existsSync(backupFile)) fs.unlinkSync(backupFile);
+        if (fs.existsSync(WIDGET_DATA_FILE)) fs.renameSync(WIDGET_DATA_FILE, backupFile);
+        try {
+            fs.renameSync(temporaryFile, WIDGET_DATA_FILE);
+            if (fs.existsSync(backupFile)) fs.unlinkSync(backupFile);
+        } catch (error) {
+            if (!fs.existsSync(WIDGET_DATA_FILE) && fs.existsSync(backupFile)) {
+                fs.renameSync(backupFile, WIDGET_DATA_FILE);
+            }
+            throw error;
+        }
+        return { ok: true };
+    } catch (error) {
+        console.warn('[Widget Data] 写入失败:', error);
+        return { ok: false, error: String(error?.message || error) };
+    }
+}
+
+function secureWindow(window) {
+    window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    window.webContents.on('will-navigate', (event, url) => {
+        if (url !== window.webContents.getURL()) event.preventDefault();
+    });
+    window.webContents.on('will-attach-webview', event => event.preventDefault());
+}
+
+function migrateNonSensitiveAuxFiles() {
+    try {
+        if (!fs.existsSync(APP_AUX_DIR)) fs.mkdirSync(APP_AUX_DIR, { recursive: true });
+        for (const name of ['settings.json', 'widget-pos.json']) {
+            const source = path.join(LEGACY_SHARED_DIR, name);
+            const target = path.join(APP_AUX_DIR, name);
+            if (fs.existsSync(source) && !fs.existsSync(target)) fs.copyFileSync(source, target);
+        }
+    } catch (error) {
+        console.warn('[migration] 无法迁移非敏感设置文件:', error);
+    }
+}
+
+migrateNonSensitiveAuxFiles();
 
 function readSettings() {
     try {
@@ -85,12 +180,15 @@ function createWindow() {
         titleBarStyle: 'hidden',
         icon: path.join(APP_DIR, 'assets', 'icon.ico'),
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-            devTools: true
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: true,
+            preload: path.join(APP_DIR, 'preload.js'),
+            devTools: !app.isPackaged
         },
         backgroundColor: '#fdfdfd'
     });
+    secureWindow(mainWindow);
 
     mainWindow.loadFile('index.html');
 
@@ -153,6 +251,14 @@ ipcMain.on('set-widget-opacity', (e, val) => {
     settings.widgetBlurOpacity = val;
     writeSettings(settings);
 });
+ipcMain.on('widget-data-read', (event) => {
+    event.returnValue = isTrustedRenderer(event) ? readWidgetDataText() : null;
+});
+ipcMain.on('widget-data-write', (event, value) => {
+    event.returnValue = isTrustedRenderer(event)
+        ? writeWidgetDataText(value)
+        : { ok: false, error: 'untrusted renderer' };
+});
 
 ipcMain.on('launch-widget', (event) => {
     const alreadyOpen = widgetWindow && !widgetWindow.isDestroyed();
@@ -192,7 +298,7 @@ function launchWidget() {
     try {
         let posX, posY;
         try {
-            const posFile = path.join(process.env.APPDATA || '', 'ProLife', 'widget-pos.json');
+            const posFile = path.join(process.env.APPDATA || '', 'ProLife-Rebuild', 'widget-pos.json');
             if (fs.existsSync(posFile)) {
                 const pos = JSON.parse(fs.readFileSync(posFile, 'utf-8'));
                 posX = pos.x; posY = pos.y;
@@ -206,8 +312,15 @@ function launchWidget() {
             frame: false, transparent: true, alwaysOnTop: true,
             resizable: true, minimizable: false, maximizable: false, skipTaskbar: true,
             icon: path.join(APP_DIR, 'assets', 'icon.ico'),
-            webPreferences: { nodeIntegration: true, contextIsolation: false }
+            webPreferences: {
+                nodeIntegration: false,
+                contextIsolation: true,
+                sandbox: true,
+                preload: path.join(APP_DIR, 'widget', 'preload.js'),
+                devTools: !app.isPackaged
+            }
         });
+        secureWindow(widgetWindow);
 
         widgetWindow.loadFile(path.join(APP_DIR, 'widget', 'widget.html'));
 
@@ -219,7 +332,7 @@ function launchWidget() {
                 if (widgetWindow && !widgetWindow.isDestroyed()) {
                     const pos = widgetWindow.getPosition();
                     try {
-                        const dir = path.join(process.env.APPDATA || '', 'ProLife');
+                        const dir = path.join(process.env.APPDATA || '', 'ProLife-Rebuild');
                         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
                         fs.writeFileSync(path.join(dir, 'widget-pos.json'), JSON.stringify({ x: pos[0], y: pos[1] }));
                     } catch(e) {}

@@ -56,63 +56,64 @@
         openModal('dailyPlanModal');
     };
 
-    window.editDailyPlan = function (id) {
-        const plan = state.dailyPlans.find(p => p.id === id);
-        if (!plan) return;
+window.editDailyPlan = function (id) {
+                const plan = state.dailyPlans.find(p => sameEntityId(p.id, id));
+                if (!plan) return;
 
-        editingDailyPlanId = id;
-        document.getElementById('dpTextInput').value = plan.text || '';
-        document.getElementById('dpStartTimeInput').value = plan.startTime || '';
-        document.getElementById('dpEndTimeInput').value = plan.endTime || '';
-        document.querySelector('#dailyPlanModal h2').textContent = '编辑每日计划';
-        openModal('dailyPlanModal');
-    };
+                editingDailyPlanId = id;
+                document.getElementById('dpTextInput').value = plan.text || '';
+                document.getElementById('dpStartTimeInput').value = plan.startTime || '';
+                document.getElementById('dpEndTimeInput').value = plan.endTime || '';
+                document.querySelector('#dailyPlanModal h2').textContent = '编辑每日计划';
+                openModal('dailyPlanModal');
+            };
 
-    window.saveDailyPlan = function () {
-        const text = document.getElementById('dpTextInput').value.trim();
-        if (!text) { showSyncToast('请输入计划内容'); return; }
+window.saveDailyPlan = function () {
+                const text = document.getElementById('dpTextInput').value.trim();
+                if (!text) { showSyncToast('请输入计划内容'); return; }
 
-        if (editingDailyPlanId) {
-            // 编辑现有计划
-            const plan = state.dailyPlans.find(p => p.id === editingDailyPlanId);
-            if (plan) {
-                plan.text = text;
-                plan.startTime = document.getElementById('dpStartTimeInput').value || '';
-                plan.endTime = document.getElementById('dpEndTimeInput').value || '';
-            }
-        } else {
-            // 添加新计划
-            state.dailyPlans.push({
-                id: uniqueId(),
-                date: new Date().toISOString().split('T')[0],
-                text,
-                startTime: document.getElementById('dpStartTimeInput').value || '',
-                endTime: document.getElementById('dpEndTimeInput').value || '',
-                completed: false
-            });
-        }
+                if (editingDailyPlanId) {
+                    // 编辑现有计划
+                    const plan = state.dailyPlans.find(p => sameEntityId(p.id, editingDailyPlanId));
+                    if (plan) {
+                        plan.text = text;
+                        plan.startTime = document.getElementById('dpStartTimeInput').value || '';
+                        plan.endTime = document.getElementById('dpEndTimeInput').value || '';
+                    }
+                } else {
+                    // 添加新计划
+                    state.dailyPlans.push({
+                        id: uniqueId(),
+                        date: new Date().toISOString().split('T')[0],
+                        text,
+                        startTime: document.getElementById('dpStartTimeInput').value || '',
+                        endTime: document.getElementById('dpEndTimeInput').value || '',
+                        completed: false
+                    });
+                }
 
-        save();
-        closeModal('dailyPlanModal');
-        renderDailyPlans();
-        editingDailyPlanId = null;
-    };
+                save();
+                closeModal('dailyPlanModal');
+                renderDailyPlans();
+                editingDailyPlanId = null;
+            };
 
-    window.toggleDailyPlan = function (id) {
-        const p = state.dailyPlans.find(p => p.id === id);
-        if (p) { p.completed = !p.completed; save(); renderDailyPlans(); }
-    };
+window.toggleDailyPlan = function (id) {
+                const p = state.dailyPlans.find(p => sameEntityId(p.id, id));
+                if (p) { p.completed = !p.completed; save(); renderDailyPlans(); }
+            };
 
-    window.deleteDailyPlan = async function (id) {
-        const confirmed = await showConfirm('删除计划', '确定要删除这个计划吗？', ['取消', '删除']);
-        if (confirmed === 0) return;
-        // 记录删除ID
-        if (!state.deletedIds.includes(id)) {
-            state.deletedIds.push(id);
-        }
-        state.dailyPlans = state.dailyPlans.filter(p => p.id !== id);
-        save();
-        renderDailyPlans();
-    };
+window.deleteDailyPlan = async function (id) {
+                const confirmed = await showConfirm('删除计划', '确定要删除这个计划吗？', ['取消', '删除']);
+                if (confirmed === 0) return;
+                // 记录删除ID
+                const tombstone = entityTombstone('daily-plan', id);
+                if (!state.deletedIds.includes(tombstone)) {
+                    state.deletedIds.push(tombstone);
+                }
+                state.dailyPlans = state.dailyPlans.filter(p => !sameEntityId(p.id, id));
+                save();
+                renderDailyPlans();
+            };
 
     // 启动桌面小组件
