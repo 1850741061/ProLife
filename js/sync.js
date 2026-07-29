@@ -155,6 +155,59 @@ async function waitForSyncRetry(attempt) {
             await new Promise(resolve => setTimeout(resolve, delay));
         }
 
+// Supabase rotates refresh tokens. A Promise only serializes calls inside one
+// tab; Web Locks (with an expiring local lease fallback) also serializes tabs
+// of this same application so the same refresh token is not submitted twice.
+const AUTH_REFRESH_LOCK_NAME = `${typeof PROLIFE_STORAGE_PREFIX === 'string' ? PROLIFE_STORAGE_PREFIX : 'prolife_rebuild::'}auth-refresh-v1`;
+const AUTH_REFRESH_LEASE_KEY = 'auth_refresh_lease_v1';
+const AUTH_REFRESH_LEASE_MS = 30000;
+
+function waitForAuthRefreshLease() {
+    return new Promise(resolve => setTimeout(resolve, 50 + Math.floor(Math.random() * 80)));
+}
+
+async function withCrossTabRefreshLock(operation) {
+    const lockManager = typeof navigator !== 'undefined' ? navigator.locks : null;
+    if (lockManager?.request) {
+        return lockManager.request(AUTH_REFRESH_LOCK_NAME, { mode: 'exclusive' }, operation);
+    }
+    const owner = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    const deadline = Date.now() + AUTH_REFRESH_LEASE_MS;
+    while (Date.now() < deadline) {
+        const now = Date.now();
+        let current = null;
+        try {
+            const raw = localStorage.getItem(AUTH_REFRESH_LEASE_KEY);
+            current = raw ? JSON.parse(raw) : null;
+        } catch (_) {
+            // Treat malformed lease data as expired.
+        }
+        if (!current || !Number.isFinite(Number(current.expiresAt)) || Number(current.expiresAt) <= now) {
+            try {
+                localStorage.setItem(AUTH_REFRESH_LEASE_KEY, JSON.stringify({
+                    owner,
+                    expiresAt: now + AUTH_REFRESH_LEASE_MS
+                }));
+                const verified = JSON.parse(localStorage.getItem(AUTH_REFRESH_LEASE_KEY) || '{}');
+                if (verified.owner === owner) {
+                    try {
+                        return await operation();
+                    } finally {
+                        try {
+                            const latest = JSON.parse(localStorage.getItem(AUTH_REFRESH_LEASE_KEY) || '{}');
+                            if (latest.owner === owner) localStorage.removeItem(AUTH_REFRESH_LEASE_KEY);
+                        } catch (_) {}
+                    }
+                }
+            } catch (_) {
+                return operation();
+            }
+        }
+        await waitForAuthRefreshLease();
+    }
+    return operation();
+}
+
 // 刷新 access token
 async function refreshAccessToken() {
             const generation = authSessionGeneration;
@@ -178,85 +231,134 @@ async function performRefreshAccessToken(generation) {
                 console.warn('[Token刷新] 没有refresh_token，无法刷新');
                 return false;
             }
-            const tokenBeingRefreshed = refreshToken;
+            return withCrossTabRefreshLock(async () => {
+                if (generation !== authSessionGeneration || !currentUser) return false;
 
-            try {
-                console.log('[Token刷新] 开始刷新token...');
-                const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_ANON_KEY
-                    },
-                    body: JSON.stringify({ refresh_token: tokenBeingRefreshed })
-                });
-
-                const data = await res.json();
-
-                if (generation !== authSessionGeneration || !currentUser) {
-                    console.warn('[Token刷新] 会话已变化，忽略旧刷新结果');
+                // A different tab may have completed rotation while this tab
+                // waited. Adopt its credentials instead of reusing the old
+                // refresh token.
+                const storedUserId = localStorage.getItem('user_id');
+                const storedRefreshToken = localStorage.getItem('refresh_token');
+                const storedAccessToken = localStorage.getItem('access_token');
+                if (storedUserId !== currentUser.id || !storedRefreshToken) {
+                    accessToken = storedAccessToken;
+                    refreshToken = storedRefreshToken;
                     return false;
                 }
+                if (storedRefreshToken !== refreshToken) {
+                    accessToken = storedAccessToken;
+                    refreshToken = storedRefreshToken;
+                    scheduleTokenRefresh();
+                    return Boolean(accessToken);
+                }
 
-                if (!res.ok || !data.access_token) {
-                    console.error('[Token刷新] 刷新失败:', data);
-                    console.error('[Token刷新] 错误详情:', data.error_description || data.error || 'Unknown error');
-
-                    // 如果是 refresh_token 过期，提示用户重新登录
-                    if (data.error === 'invalid_grant' || data.error_description?.includes('expired')) {
-                        console.error('[Token刷新] Refresh token已过期，需要重新登录');
-
-                        // 显示明显的全屏提示
-                        const overlay = createDialogOverlay();
-                        const dialog = createDialog(`
-                            <div style="text-align: center;">
-                                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--danger-color); margin-bottom: 20px;"></i>
-                                <h3 style="margin: 0 0 15px 0; font-size: 1.5rem;">登录已过期</h3>
-                                <p style="margin: 0 0 20px 0; color: var(--text-secondary); line-height: 1.6;">
-                                    您的登录状态已过期，需要重新登录以继续使用云同步功能。<br>
-                                    点击确定后将自动跳转到登录页面。
-                                </p>
-                            </div>
-                        `);
-
-                        setupDialogButtons(overlay, dialog, '确定', null, () => {
-                            // 失效会话无法再上传；保留账号归属的本地数据，
-                            // 同账号重新登录后会继续合并。
-                            signOut({ allowUnsynced: true });
+                const tokenBeingRefreshed = storedRefreshToken;
+                try {
+                    console.log('[Token刷新] 开始刷新token...');
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), SYNC_REQUEST_TIMEOUT_MS);
+                    let res;
+                    try {
+                        res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': SUPABASE_ANON_KEY
+                            },
+                            body: JSON.stringify({ refresh_token: tokenBeingRefreshed }),
+                            signal: controller.signal
                         });
-                    } else {
-                        // 其他刷新失败，显示简单提示
-                        showSyncToast('Token刷新失败，可能需要重新登录', 'error');
+                    } finally {
+                        clearTimeout(timeout);
                     }
 
+                    const data = await res.json().catch(() => ({}));
+                    if (generation !== authSessionGeneration || !currentUser) {
+                        console.warn('[Token刷新] 会话已变化，忽略旧刷新结果');
+                        return false;
+                    }
+
+                    if (!res.ok || !data.access_token) {
+                        console.error('[Token刷新] 刷新失败:', data);
+                        console.error('[Token刷新] 错误详情:', data.error_description || data.error || 'Unknown error');
+
+                        // If another tab won the rotation while this request
+                        // was in flight, adopt that newer family and do not
+                        // sign out the valid session.
+                        const latestUserId = localStorage.getItem('user_id');
+                        const latestRefreshToken = localStorage.getItem('refresh_token');
+                        if (
+                            latestUserId === currentUser.id
+                            && latestRefreshToken
+                            && latestRefreshToken !== tokenBeingRefreshed
+                        ) {
+                            accessToken = localStorage.getItem('access_token');
+                            refreshToken = latestRefreshToken;
+                            scheduleTokenRefresh();
+                            return Boolean(accessToken);
+                        }
+
+                        // 如果是 refresh_token 过期，提示用户重新登录
+                        if (
+                            (data.error === 'invalid_grant' || data.error_description?.includes('expired'))
+                            && generation === authSessionGeneration
+                            && latestUserId === currentUser.id
+                            && latestRefreshToken === tokenBeingRefreshed
+                        ) {
+                            console.error('[Token刷新] Refresh token已过期，需要重新登录');
+
+                            // 显示明显的全屏提示
+                            const overlay = createDialogOverlay();
+                            const dialog = createDialog(`
+                                <div style="text-align: center;">
+                                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--danger-color); margin-bottom: 20px;"></i>
+                                    <h3 style="margin: 0 0 15px 0; font-size: 1.5rem;">登录已过期</h3>
+                                    <p style="margin: 0 0 20px 0; color: var(--text-secondary); line-height: 1.6;">
+                                        您的登录状态已过期，需要重新登录以继续使用云同步功能。<br>
+                                        点击确定后将自动跳转到登录页面。
+                                    </p>
+                                </div>
+                            `);
+
+                            setupDialogButtons(overlay, dialog, '确定', null, () => {
+                                // 失效会话无法再上传；保留账号归属的本地数据，
+                                // 同账号重新登录后会继续合并。
+                                signOut({ allowUnsynced: true });
+                            });
+                        } else {
+                            // 其他刷新失败，显示简单提示
+                            showSyncToast('Token刷新失败，可能需要重新登录', 'error');
+                        }
+
+                        return false;
+                    }
+
+                    // 更新 token
+                    accessToken = data.access_token;
+                    if (data.refresh_token) {
+                        refreshToken = data.refresh_token;
+                        localStorage.setItem('refresh_token', data.refresh_token);
+                    }
+                    localStorage.setItem('access_token', data.access_token);
+                    if (supabaseClient?.realtime?.setAuth) {
+                        supabaseClient.realtime.setAuth(data.access_token);
+                    }
+                    // The main renderer is the single owner of refresh-token
+                    // rotation. Export the new access token to the widget instead
+                    // of allowing two processes to rotate the same session.
+                    exportWidgetData();
+
+                    console.log('[Token刷新] Token刷新成功');
+
+                    // 重新设置定时刷新
+                    scheduleTokenRefresh();
+
+                    return true;
+                } catch (e) {
+                    console.error('[Token刷新] 刷新异常:', e);
                     return false;
                 }
-
-                // 更新 token
-                accessToken = data.access_token;
-                if (data.refresh_token) {
-                    refreshToken = data.refresh_token;
-                    localStorage.setItem('refresh_token', data.refresh_token);
-                }
-                localStorage.setItem('access_token', data.access_token);
-                if (supabaseClient?.realtime?.setAuth) {
-                    supabaseClient.realtime.setAuth(data.access_token);
-                }
-                // The main renderer is the single owner of refresh-token
-                // rotation. Export the new access token to the widget instead
-                // of allowing two processes to rotate the same session.
-                exportWidgetData();
-
-                console.log('[Token刷新] Token刷新成功');
-
-                // 重新设置定时刷新
-                scheduleTokenRefresh();
-
-                return true;
-            } catch (e) {
-                console.error('[Token刷新] 刷新异常:', e);
-                return false;
-            }
+            });
         }
 
 // 设置定时刷新 token（每25分钟刷新一次）
@@ -806,6 +908,10 @@ async function syncFromCloudInternal(session, options = {}) {
 // 保存时自动同步：本地立即落盘，云端短暂防抖。
 
 // ========== Realtime 实时同步 ==========
+let realtimeSubscriptionGeneration = 0;
+let realtimeReconnectTimer = null;
+const realtimeLastAppliedVersion = new Map();
+
 function subscribeToRealtime() {
             try {
                 // 检查 Supabase 客户端是否可用
@@ -823,6 +929,7 @@ function subscribeToRealtime() {
                 }
                 const subscriptionSession = captureSyncSession();
                 if (!subscriptionSession) return;
+                const subscriptionGeneration = realtimeSubscriptionGeneration;
 
                 console.log('[Realtime] 正在订阅数据变化...');
 
@@ -845,9 +952,32 @@ function subscribeToRealtime() {
                         (payload) => {
                             console.log('[Realtime] 收到数据变化:', payload);
                             if (!payload.new || !['UPDATE', 'INSERT'].includes(payload.eventType)) return;
+                            if (
+                                subscriptionGeneration !== realtimeSubscriptionGeneration
+                                || !isSyncSessionCurrent(subscriptionSession)
+                            ) return;
                             void enqueueSyncOperation(async () => {
-                                if (!isSyncSessionCurrent(subscriptionSession)) return;
+                                if (
+                                    subscriptionGeneration !== realtimeSubscriptionGeneration
+                                    || !isSyncSessionCurrent(subscriptionSession)
+                                ) return;
                                 const base = loadSyncBaseSnapshot(subscriptionSession.userId);
+                                const incomingUpdatedAt = Date.parse(String(payload.new.updated_at || ''));
+                                const baseUpdatedAt = Date.parse(String(base?.updated_at || ''));
+                                const lastAppliedAt = realtimeLastAppliedVersion.get(subscriptionSession.userId) || 0;
+                                const knownVersion = Math.max(
+                                    Number.isFinite(baseUpdatedAt) ? baseUpdatedAt : 0,
+                                    lastAppliedAt
+                                );
+                                // Realtime can replay old events after a reconnect.
+                                // Ignore an event that is not newer and does not
+                                // contain an actual payload change.
+                                if (
+                                    Number.isFinite(incomingUpdatedAt)
+                                    && incomingUpdatedAt > 0
+                                    && incomingUpdatedAt <= knownVersion
+                                    && !cloudPayloadHasChanges(payload.new, base)
+                                ) return;
                                 const localPayload = buildCloudPayloadForSync(state.deletedIds, subscriptionSession.userId);
                                 const localWasDirty = !base || cloudPayloadHasChanges(localPayload, base);
                                 console.log('[Realtime] 检测到云端数据变化，记录级合并...');
@@ -867,6 +997,12 @@ function subscribeToRealtime() {
                                     // the next foreground poll.
                                     void syncToCloud();
                                 }
+                                if (Number.isFinite(incomingUpdatedAt) && incomingUpdatedAt > 0) {
+                                    realtimeLastAppliedVersion.set(
+                                        subscriptionSession.userId,
+                                        Math.max(lastAppliedAt, incomingUpdatedAt)
+                                    );
+                                }
                                 renderAll();
                                 showSyncToast('数据已同步');
                             });
@@ -881,8 +1017,14 @@ function subscribeToRealtime() {
                                 console.log('[Realtime] ✓ 订阅成功，将实时接收数据变化');
                             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                                 console.log('[Realtime] 连接断开，5秒后重连...');
-                                setTimeout(() => {
-                                    if (isSyncSessionCurrent(subscriptionSession)) subscribeToRealtime();
+                                if (subscriptionGeneration !== realtimeSubscriptionGeneration) return;
+                                if (realtimeReconnectTimer) clearTimeout(realtimeReconnectTimer);
+                                realtimeReconnectTimer = setTimeout(() => {
+                                    realtimeReconnectTimer = null;
+                                    if (
+                                        subscriptionGeneration === realtimeSubscriptionGeneration
+                                        && isSyncSessionCurrent(subscriptionSession)
+                                    ) subscribeToRealtime();
                                 }, 5000);
                             } else if (status === 'CLOSED') {
                                 console.log('[Realtime] 连接已关闭');
@@ -895,10 +1037,18 @@ function subscribeToRealtime() {
         }
 
 function unsubscribeToRealtime() {
+    realtimeSubscriptionGeneration += 1;
+    if (realtimeReconnectTimer) {
+        clearTimeout(realtimeReconnectTimer);
+        realtimeReconnectTimer = null;
+    }
     if (realtimeChannel) {
         try {
             console.log('[Realtime] 取消订阅');
-            supabaseClient.removeChannel(realtimeChannel);
+            const removal = supabaseClient.removeChannel(realtimeChannel);
+            // Supabase may return a Promise; waiting is not required for
+            // logout, but observing rejection avoids an unhandled warning.
+            if (removal?.catch) removal.catch(() => {});
         } catch (e) {
             console.warn('[Realtime] 取消订阅失败（非致命）:', e);
         }
