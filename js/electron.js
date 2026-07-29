@@ -2,7 +2,7 @@
 
 const isElectron = (function () {
     try {
-        return typeof require !== 'undefined' && typeof window !== 'undefined' && window.process && window.process.type === 'renderer';
+        return typeof window !== 'undefined' && window.desktopAPI?.isElectron === true;
     } catch (e) {
         return false;
     }
@@ -10,7 +10,7 @@ const isElectron = (function () {
 
 if (isElectron) {
     document.body.classList.add('electron-env');
-    const { ipcRenderer } = require('electron');
+    const ipcRenderer = window.desktopAPI.ipc;
     document.getElementById('btnMinimize').addEventListener('click', () => {
         ipcRenderer.send('window-minimize');
     });

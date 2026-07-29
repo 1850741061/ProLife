@@ -1,4 +1,6 @@
-const CACHE_NAME = 'todo-v1';
+const CACHE_NAME = 'prolife-rebuild-v3-sync-safe';
+const CACHE_PREFIX = 'prolife-rebuild-';
+const LEGACY_CACHE_NAMES = new Set(['prolife-v3-sync-safe']);
 
 // 安装 Service Worker
 self.addEventListener('install', (event) => {
@@ -7,9 +9,9 @@ self.addEventListener('install', (event) => {
             .then((cache) => cache.addAll([
                 './',
                 './index.html',
-                './manifest.json',
                 './sw.js',
-                './assets/icon.png'
+                './assets/icon_32.png',
+                './assets/icon_256.png'
             ]))
             .then(() => self.skipWaiting())
     );
@@ -21,8 +23,10 @@ self.addEventListener('activate', (event) => {
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cacheName) => {
-                    // 删除所有旧版本的缓存
-                    if (cacheName !== CACHE_NAME) {
+                    // 只清理本应用的旧缓存；同源的其它应用由各自
+                    // 的前缀管理，不能在这里删除。
+                    if ((cacheName.startsWith(CACHE_PREFIX) || LEGACY_CACHE_NAMES.has(cacheName))
+                        && cacheName !== CACHE_NAME) {
                         return caches.delete(cacheName);
                     }
                 })

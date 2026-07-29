@@ -52,24 +52,24 @@ window.onTodoDragEnd = function (e) {
 
 // 任务在另一个任务上方拖拽
 window.onTodoDragOver = function (e, targetTodoId) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
 
-    if (!state.draggedTodoId || state.draggedTodoId === targetTodoId) return;
+            if (!state.draggedTodoId || sameEntityId(state.draggedTodoId, targetTodoId)) return;
 
-    const targetElement = e.currentTarget;
-    const rect = targetElement.getBoundingClientRect();
-    const midY = rect.top + rect.height / 2;
+            const targetElement = e.currentTarget;
+            const rect = targetElement.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
 
-    // 根据鼠标位置决定插入到上方还是下方
-    if (e.clientY < midY) {
-        targetElement.style.borderTop = '4px solid var(--accent-color)';
-        targetElement.style.borderBottom = '';
-    } else {
-        targetElement.style.borderBottom = '4px solid var(--accent-color)';
-        targetElement.style.borderTop = '';
-    }
-};
+            // 根据鼠标位置决定插入到上方还是下方
+            if (e.clientY < midY) {
+                targetElement.style.borderTop = '4px solid var(--accent-color)';
+                targetElement.style.borderBottom = '';
+            } else {
+                targetElement.style.borderBottom = '4px solid var(--accent-color)';
+                targetElement.style.borderTop = '';
+            }
+        };
 
 // 离开拖拽目标
 window.onTodoDragLeave = function (e) {
@@ -79,37 +79,37 @@ window.onTodoDragLeave = function (e) {
 
 // 在任务位置放下
 window.onTodoDrop = function (e, targetTodoId) {
-    e.preventDefault();
-    e.currentTarget.style.borderTop = '';
-    e.currentTarget.style.borderBottom = '';
+            e.preventDefault();
+            e.currentTarget.style.borderTop = '';
+            e.currentTarget.style.borderBottom = '';
 
-    if (!state.draggedTodoId || state.draggedTodoId === targetTodoId) return;
+            if (!state.draggedTodoId || state.draggedTodoId === targetTodoId) return;
 
-    // 重新排序任务列表
-    const draggedIndex = state.todos.findIndex(t => t.id === state.draggedTodoId);
-    const targetIndex = state.todos.findIndex(t => t.id === targetTodoId);
+            // 重新排序任务列表
+            const draggedIndex = state.todos.findIndex(t => sameEntityId(t.id, state.draggedTodoId));
+            const targetIndex = state.todos.findIndex(t => sameEntityId(t.id, targetTodoId));
 
-    if (draggedIndex === -1 || targetIndex === -1) return;
+            if (draggedIndex === -1 || targetIndex === -1) return;
 
-    // 判断是插入到目标上方还是下方
-    const rect = e.currentTarget.getBoundingClientRect();
-    const midY = rect.top + rect.height / 2;
-    const insertAfter = e.clientY >= midY;
+            // 判断是插入到目标上方还是下方
+            const rect = e.currentTarget.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            const insertAfter = e.clientY >= midY;
 
-    // 移动元素
-    const [draggedTodo] = state.todos.splice(draggedIndex, 1);
+            // 移动元素
+            const [draggedTodo] = state.todos.splice(draggedIndex, 1);
 
-    // 如果是插入到下方，目标索引需要+1（因为已经删除了被拖拽的元素）
-    const finalIndex = insertAfter && targetIndex > draggedIndex
-        ? targetIndex
-        : targetIndex + (insertAfter ? 1 : 0);
+            // 如果是插入到下方，目标索引需要+1（因为已经删除了被拖拽的元素）
+            const finalIndex = insertAfter && targetIndex > draggedIndex
+                ? targetIndex
+                : targetIndex + (insertAfter ? 1 : 0);
 
-    state.todos.splice(finalIndex, 0, draggedTodo);
+            state.todos.splice(finalIndex, 0, draggedTodo);
 
-    save();
-    renderTodos();
-    showSyncToast('任务已重新排序');
-};
+            save();
+            renderTodos();
+            showSyncToast('任务已重新排序');
+        };
 
 // 分组拖拽进入
 window.onGroupDragOver = function (e, groupId) {
@@ -132,36 +132,36 @@ window.onGroupDragLeave = function (e) {
 
 // 放到分组上
 window.onGroupDrop = function (e, groupId) {
-    e.preventDefault();
-    e.currentTarget.style.background = '';
-    e.currentTarget.style.transform = '';
+            e.preventDefault();
+            e.currentTarget.style.background = '';
+            e.currentTarget.style.transform = '';
 
-    if (!state.draggedTodoId) return;
+            if (!state.draggedTodoId) return;
 
-    const group = state.groups.find(g => g.id === groupId);
-    if (!group) return;
+            const group = state.groups.find(g => sameEntityId(g.id, groupId));
+            if (!group) return;
 
-    // 更新任务的分组，同时清除项目字段（项目与分组互斥）
-    state.todos = state.todos.map(t =>
-        t.id === state.draggedTodoId
-            ? {
-                ...t,
-                groupId: group.id,
-                groupName: group.name,
-                groupColor: group.color,
-                projectId: null,
-                projectName: null,
-                projectColor: null
-            }
-            : t
-    );
+            // 更新任务的分组，同时清除项目字段（项目与分组互斥）
+            state.todos = state.todos.map(t =>
+                sameEntityId(t.id, state.draggedTodoId)
+                    ? {
+                        ...t,
+                        groupId: group.id,
+                        groupName: group.name,
+                        groupColor: group.color,
+                        projectId: null,
+                        projectName: null,
+                        projectColor: null
+                    }
+                    : t
+            );
 
-    state.draggedTodoId = null;
-    state.dragOverGroupId = null;
+            state.draggedTodoId = null;
+            state.dragOverGroupId = null;
 
-    save();
-    renderTodos();
-    showSyncToast(`已移动到 "${group.name}"`);
-};
+            save();
+            renderTodos();
+            showSyncToast(`已移动到 "${group.name}"`);
+        };
 
 // ========== 任务模板系统 ==========

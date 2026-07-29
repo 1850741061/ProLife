@@ -251,80 +251,80 @@ function showProjectTasksInCalendar(project) {
 
 // --- 任务详情模态框 ---
 window.openTaskDetailModal = (taskId) => {
-    const t = state.todos.find(x => x.id === taskId);
-    if (!t) return;
+            const t = state.todos.find(x => sameEntityId(x.id, taskId));
+            if (!t) return;
 
-    // 设置标题
-    document.getElementById('detailTaskTitle').innerText = t.text;
+            // 设置标题
+            document.getElementById('detailTaskTitle').innerText = t.text;
 
-    // 设置属性徽章
-    document.getElementById('detailTaskDate').innerHTML = `<i class="far fa-calendar"></i> ${t.date}`;
-    document.getElementById('detailTaskDate').style.setProperty('--group-color', t.groupColor);
+            // 设置属性徽章
+            document.getElementById('detailTaskDate').innerHTML = `<i class="far fa-calendar"></i> ${t.date}`;
+            document.getElementById('detailTaskDate').style.setProperty('--group-color', t.groupColor);
 
-    // 时间段
-    if (t.startTime || t.endTime) {
-        document.getElementById('detailTaskTime').style.display = 'inline-block';
-        document.getElementById('detailTaskTime').innerHTML = `<i class="far fa-clock"></i> ${t.startTime || '--'} - ${t.endTime || '--'}`;
-        document.getElementById('detailTaskTime').style.color = 'var(--accent-color)';
-        document.getElementById('detailTaskTime').style.borderColor = 'var(--accent-color)';
-    } else {
-        document.getElementById('detailTaskTime').style.display = 'none';
-    }
+            // 时间段
+            if (t.startTime || t.endTime) {
+                document.getElementById('detailTaskTime').style.display = 'inline-block';
+                document.getElementById('detailTaskTime').innerHTML = `<i class="far fa-clock"></i> ${t.startTime || '--'} - ${t.endTime || '--'}`;
+                document.getElementById('detailTaskTime').style.color = 'var(--accent-color)';
+                document.getElementById('detailTaskTime').style.borderColor = 'var(--accent-color)';
+            } else {
+                document.getElementById('detailTaskTime').style.display = 'none';
+            }
 
-    // 优先级
-    const pLabel = pMap[t.priority] || '中';
-    const priorityEl = document.getElementById('detailTaskPriority');
-    priorityEl.innerText = `${pLabel}优先级`;
-    priorityEl.className = `attribute-badge priority-${t.priority}`;
+            // 优先级
+            const pLabel = pMap[t.priority] || '中';
+            const priorityEl = document.getElementById('detailTaskPriority');
+            priorityEl.innerText = `${pLabel}优先级`;
+            priorityEl.className = `attribute-badge priority-${t.priority}`;
 
-    // 分组
-    document.getElementById('detailTaskGroup').innerText = t.groupName;
-    document.getElementById('detailTaskGroup').style.color = t.groupColor;
-    document.getElementById('detailTaskGroup').style.borderColor = t.groupColor;
+            // 分组
+            document.getElementById('detailTaskGroup').innerText = t.groupName;
+            document.getElementById('detailTaskGroup').style.color = t.groupColor;
+            document.getElementById('detailTaskGroup').style.borderColor = t.groupColor;
 
-    // 备注
-    if (t.notes) {
-        document.getElementById('detailTaskNotesSection').style.display = 'block';
-        document.getElementById('detailTaskNotes').innerText = t.notes;
-    } else {
-        document.getElementById('detailTaskNotesSection').style.display = 'none';
-    }
+            // 备注
+            if (t.notes) {
+                document.getElementById('detailTaskNotesSection').style.display = 'block';
+                document.getElementById('detailTaskNotes').innerText = t.notes;
+            } else {
+                document.getElementById('detailTaskNotesSection').style.display = 'none';
+            }
 
-    // 子任务
-    if (t.subtasks && t.subtasks.length > 0) {
-        document.getElementById('detailSubtasksSection').style.display = 'block';
-        const completed = t.subtasks.filter(st => st.completed).length;
-        document.getElementById('detailSubtaskCount').innerText = `(${completed}/${t.subtasks.length})`;
+            // 子任务
+            if (t.subtasks && t.subtasks.length > 0) {
+                document.getElementById('detailSubtasksSection').style.display = 'block';
+                const completed = t.subtasks.filter(st => st.completed).length;
+                document.getElementById('detailSubtaskCount').innerText = `(${completed}/${t.subtasks.length})`;
 
-        const subtaskList = document.getElementById('detailSubtaskList');
-        subtaskList.innerHTML = t.subtasks.map(st => `
-            <li class="subtask-item ${st.completed ? 'completed' : ''}">
-                <input type="checkbox" class="subtask-checkbox" ${st.completed ? 'checked' : ''} onchange="toggleSubtask(${t.id}, ${st.id});">
-                <span class="subtask-text">${escapeHtml(st.text)}</span>
-            </li>
-        `).join('');
-    } else {
-        document.getElementById('detailSubtasksSection').style.display = 'none';
-    }
+                const subtaskList = document.getElementById('detailSubtaskList');
+                subtaskList.innerHTML = t.subtasks.map(st => `
+                    <li class="subtask-item ${st.completed ? 'completed' : ''}">
+                        <input type="checkbox" class="subtask-checkbox" ${st.completed ? 'checked' : ''} onchange="toggleSubtask(${t.id}, ${st.id});">
+                        <span class="subtask-text">${escapeHtml(st.text)}</span>
+                    </li>
+                `).join('');
+            } else {
+                document.getElementById('detailSubtasksSection').style.display = 'none';
+            }
 
-    // 设置编辑按钮
-    document.getElementById('detailEditBtn').onclick = () => {
-        closeModal('taskDetailModal');
-        openEditTask(t.id);
-    };
+            // 设置编辑按钮
+            document.getElementById('detailEditBtn').onclick = () => {
+                closeModal('taskDetailModal');
+                openEditTask(t.id);
+            };
 
-    openModal('taskDetailModal');
-};
+            openModal('taskDetailModal');
+        };
 
 // 检查是否所有子任务都完成了，如果是则关闭详情页
 window.closeIfNeeded = (taskId) => {
-    const task = state.todos.find(t => t.id === taskId);
-    if (!task || !task.subtasks || task.subtasks.length === 0) return;
+            const task = state.todos.find(t => sameEntityId(t.id, taskId));
+            if (!task || !task.subtasks || task.subtasks.length === 0) return;
 
-    const allCompleted = task.subtasks.every(st => st.completed);
-    if (allCompleted) {
-        closeModal('taskDetailModal');
-    }
-};
+            const allCompleted = task.subtasks.every(st => st.completed);
+            if (allCompleted) {
+                closeModal('taskDetailModal');
+            }
+        };
 
 // --- 记账 ---

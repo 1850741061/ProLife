@@ -18,7 +18,7 @@ function animateValue(id, start, end, duration) {
     const timer = setInterval(function () {
         current += increment;
         obj.innerHTML = current;
-        if (current == end) {
+        if (current === end) {
             clearInterval(timer);
         }
     }, Math.max(stepTime, 10));
@@ -58,7 +58,7 @@ function showConfirm(title, message, options = ['取消', '确定']) {
         const dialog = document.getElementById('confirmDialog');
 
         titleEl.textContent = title;
-        messageEl.innerHTML = message.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+        messageEl.innerHTML = escapeHtml(message).replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
         buttonsContainer.innerHTML = '';
 
         options.forEach((optionText, index) => {

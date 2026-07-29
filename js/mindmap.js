@@ -35,168 +35,173 @@ window.closeMindmap = function () {
 
 // 渲染思维导图
 function renderMindmap() {
-    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
-    if (!project) return;
+            const project = state.projects.find(p => sameEntityId(p.id, currentMindmapProjectId));
+            if (!project) return;
 
-    const canvas = document.getElementById('mindmapCanvas');
-    const svg = document.getElementById('mindmapSvg');
+            const canvas = document.getElementById('mindmapCanvas');
+            const svg = document.getElementById('mindmapSvg');
 
-    // 清除旧内容（保留SVG元素）
-    canvas.querySelectorAll('.mm-node').forEach(n => n.remove());
-    svg.innerHTML = '';
+            // 清除旧内容（保留SVG元素）
+            canvas.querySelectorAll('.mm-node').forEach(n => n.remove());
+            svg.innerHTML = '';
 
-    // 获取该项目所有任务
-    const projectTasks = state.todos.filter(t => String(t.projectId) === String(project.id));
+            // 获取该项目所有任务
+            const projectTasks = state.todos.filter(t => sameEntityId(t.projectId, project.id));
 
-    // 递归构建分组树
-    const subGroups = project.subGroups || [];
-    function buildTree(parentId) {
-        const children = subGroups.filter(sg => {
-            const pid = sg.parentId || null;
-            return parentId === null ? pid === null : String(pid) === String(parentId);
-        });
-        return children.map(sg => ({
-            group: sg,
-            tasks: projectTasks.filter(t => String(t.projectSubGroupId) === String(sg.id)),
-            children: buildTree(sg.id)
-        }));
-    }
-    let tree = buildTree(null);
+            // 递归构建分组树
+            const subGroups = project.subGroups || [];
+            function buildTree(parentId) {
+                const children = subGroups.filter(sg => {
+                    const pid = sg.parentId || null;
+                    // 新桌面端用 project.id 表示顶层，旧数据用 null。
+                    return parentId === null
+                        ? (pid === null || sameEntityId(pid, project.id))
+                        : sameEntityId(pid, parentId);
+                });
+                return children.map(sg => ({
+                    group: sg,
+                    tasks: projectTasks.filter(t => sameEntityId(t.projectSubGroupId, sg.id)),
+                    children: buildTree(sg.id)
+                }));
+            }
+            let tree = buildTree(null);
 
-    // 未分组任务
-    const assignedGroupIds = subGroups.map(sg => sg.id);
-    const ungroupedTasks = projectTasks.filter(t => !t.projectSubGroupId || !assignedGroupIds.includes(Number(t.projectSubGroupId)));
-    if (ungroupedTasks.length > 0 || tree.length === 0) {
-        tree.push({
-            group: { id: '__ungrouped__', name: '未分类', color: '#6b7280' },
-            tasks: ungroupedTasks,
-            children: []
-        });
-    }
-
-    // ===== 布局 =====
-    const NODE_H_GAP = 180;
-    const NODE_V_GAP = 16;
-    const PROJECT_NODE_W = 220;
-    const GROUP_NODE_W = 160;
-    const TASK_NODE_W = 220;
-    const TASK_NODE_H = 65;
-    const GROUP_NODE_H = 50;
-    const PROJECT_NODE_H = 90;
-
-    function calcHeight(node) {
-        const taskH = node.tasks.length * (TASK_NODE_H + NODE_V_GAP);
-        const childrenH = node.children.reduce((s, c) => s + calcHeight(c) + NODE_V_GAP, 0);
-        return Math.max(taskH, childrenH, GROUP_NODE_H + NODE_V_GAP);
-    }
-    const totalTreeH = tree.reduce((s, n) => s + calcHeight(n) + NODE_V_GAP, 0);
-
-    const col1X = 60;
-    const totalT = projectTasks.length;
-    const completedT = projectTasks.filter(t => t.completed).length;
-    const progress = totalT > 0 ? Math.round((completedT / totalT) * 100) : 0;
-    const projectY = Math.max(60, totalTreeH / 2 - PROJECT_NODE_H / 2 + 60);
-
-    const projectNode = createNode('project-node', col1X, projectY, PROJECT_NODE_W, `
-        <div class="mm-node-header" style="background:${project.color};">
-            <i class="fas fa-project-diagram"></i> ${project.name}
-        </div>
-        <div class="mm-node-body">
-            <div style="font-size:0.8rem;color:var(--text-secondary);">${completedT}/${totalT} 任务完成</div>
-            <div class="mm-progress-bar">
-                <div class="mm-progress-fill" style="width:${progress}%;background:${project.color};"></div>
-            </div>
-        </div>
-        <div class="mm-socket output" style="background:${project.color};border-color:${project.color};"></div>
-    `, () => showProjectDetail(project));
-    canvas.appendChild(projectNode);
-
-    const connections = [];
-    let maxColX = col1X + PROJECT_NODE_W;
-
-    function renderSubTree(nodes, pX, pW, pY, pH, startY) {
-        const colX = pX + pW + NODE_H_GAP;
-        const taskColX = colX + GROUP_NODE_W + NODE_H_GAP;
-        if (taskColX + TASK_NODE_W > maxColX) maxColX = taskColX + TASK_NODE_W;
-        let curY = startY;
-
-        nodes.forEach(nd => {
-            const nodeH = calcHeight(nd);
-            const gcY = curY + nodeH / 2 - GROUP_NODE_H / 2;
-            const gColor = nd.group.color || '#6b7280';
-
-            function countAll(n) { return n.tasks.length + n.children.reduce((s, c) => s + countAll(c), 0); }
-            function countDone(n) { return n.tasks.filter(t => t.completed).length + n.children.reduce((s, c) => s + countDone(c), 0); }
-
-            const groupNode = createNode('group-node', colX, gcY, GROUP_NODE_W, `
-                <div class="mm-socket input" style="background:${gColor};border-color:${gColor};"></div>
-                <div class="mm-node-header" style="background:${gColor};"><i class="fas fa-layer-group"></i> ${nd.group.name}</div>
-                <div class="mm-node-body"><div style="font-size:0.8rem;color:var(--text-secondary);">${countDone(nd)}/${countAll(nd)} 完成</div></div>
-                <div class="mm-socket output" style="background:${gColor};border-color:${gColor};"></div>
-            `, () => showSubGroupDetail(project, nd.group));
-
-            groupNode.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; groupNode.classList.add('drag-over'); });
-            groupNode.addEventListener('dragleave', () => groupNode.classList.remove('drag-over'));
-            groupNode.addEventListener('drop', e => {
-                e.preventDefault(); groupNode.classList.remove('drag-over');
-                const tid = e.dataTransfer.getData('text/mm-task-id');
-                if (tid) mmMoveTaskToGroup(Number(tid), nd.group.id === '__ungrouped__' ? null : nd.group.id);
-            });
-            canvas.appendChild(groupNode);
-
-            connections.push({ fromX: pX + pW, fromY: pY + pH / 2, toX: colX, toY: gcY + GROUP_NODE_H / 2, color: gColor });
-
-            // 渲染子分组（递归）
-            if (nd.children.length > 0) {
-                renderSubTree(nd.children, colX, GROUP_NODE_W, gcY, GROUP_NODE_H, curY);
+            // 未分组任务
+            const assignedGroupIds = new Set(subGroups.map(sg => String(sg.id)));
+            const ungroupedTasks = projectTasks.filter(t =>
+                !t.projectSubGroupId || !assignedGroupIds.has(String(t.projectSubGroupId))
+            );
+            if (ungroupedTasks.length > 0 || tree.length === 0) {
+                tree.push({
+                    group: { id: '__ungrouped__', name: '未分类', color: '#6b7280' },
+                    tasks: ungroupedTasks,
+                    children: []
+                });
             }
 
-            // 渲染直属任务
-            const taskStartY = nd.children.length > 0 ? curY + nd.children.reduce((s, c) => s + calcHeight(c) + NODE_V_GAP, 0) : curY;
-            nd.tasks.forEach((task, ti) => {
-                const taskY = taskStartY + ti * (TASK_NODE_H + NODE_V_GAP);
-                const pLabel = { low: '低', medium: '中', high: '高' }[task.priority] || '中';
-                const taskNode = createNode(`task-node ${task.completed ? 'completed' : ''}`, taskColX, taskY, TASK_NODE_W, `
-                    <div class="mm-socket input" style="background:${gColor};border-color:${gColor};"></div>
-                    <div class="mm-node-header" style="background:${task.completed ? 'var(--success-color)' : gColor};">
-                        <i class="fas ${task.completed ? 'fa-check-circle' : 'fa-circle'}"></i> ${pLabel}优先级
+            // ===== 布局 =====
+            const NODE_H_GAP = 180;
+            const NODE_V_GAP = 16;
+            const PROJECT_NODE_W = 220;
+            const GROUP_NODE_W = 160;
+            const TASK_NODE_W = 220;
+            const TASK_NODE_H = 65;
+            const GROUP_NODE_H = 50;
+            const PROJECT_NODE_H = 90;
+
+            function calcHeight(node) {
+                const taskH = node.tasks.length * (TASK_NODE_H + NODE_V_GAP);
+                const childrenH = node.children.reduce((s, c) => s + calcHeight(c) + NODE_V_GAP, 0);
+                return Math.max(taskH, childrenH, GROUP_NODE_H + NODE_V_GAP);
+            }
+            const totalTreeH = tree.reduce((s, n) => s + calcHeight(n) + NODE_V_GAP, 0);
+
+            const col1X = 60;
+            const totalT = projectTasks.length;
+            const completedT = projectTasks.filter(t => t.completed).length;
+            const progress = totalT > 0 ? Math.round((completedT / totalT) * 100) : 0;
+            const projectY = Math.max(60, totalTreeH / 2 - PROJECT_NODE_H / 2 + 60);
+
+            const projectNode = createNode('project-node', col1X, projectY, PROJECT_NODE_W, `
+                <div class="mm-node-header" style="background:${project.color};">
+                    <i class="fas fa-project-diagram"></i> ${project.name}
+                </div>
+                <div class="mm-node-body">
+                    <div style="font-size:0.8rem;color:var(--text-secondary);">${completedT}/${totalT} 任务完成</div>
+                    <div class="mm-progress-bar">
+                        <div class="mm-progress-fill" style="width:${progress}%;background:${project.color};"></div>
                     </div>
-                    <div class="mm-node-body">
-                        <div class="mm-task-text">${task.text}</div>
-                        <div class="mm-task-meta">${task.date ? '<i class="far fa-calendar"></i> ' + task.date.substring(5) : ''} ${task.startTime ? '<i class="far fa-clock"></i> ' + task.startTime : ''}</div>
-                    </div>
-                `, () => showTaskDetail(task));
-                taskNode.draggable = true;
-                taskNode.addEventListener('dragstart', e => { e.dataTransfer.setData('text/mm-task-id', String(task.id)); e.dataTransfer.effectAllowed = 'move'; taskNode.style.opacity = '0.5'; });
-                taskNode.addEventListener('dragend', () => { taskNode.style.opacity = '1'; });
-                canvas.appendChild(taskNode);
-                connections.push({ fromX: colX + GROUP_NODE_W, fromY: gcY + GROUP_NODE_H / 2, toX: taskColX, toY: taskY + TASK_NODE_H / 2, color: gColor });
+                </div>
+                <div class="mm-socket output" style="background:${project.color};border-color:${project.color};"></div>
+            `, () => showProjectDetail(project));
+            canvas.appendChild(projectNode);
+
+            const connections = [];
+            let maxColX = col1X + PROJECT_NODE_W;
+
+            function renderSubTree(nodes, pX, pW, pY, pH, startY) {
+                const colX = pX + pW + NODE_H_GAP;
+                const taskColX = colX + GROUP_NODE_W + NODE_H_GAP;
+                if (taskColX + TASK_NODE_W > maxColX) maxColX = taskColX + TASK_NODE_W;
+                let curY = startY;
+
+                nodes.forEach(nd => {
+                    const nodeH = calcHeight(nd);
+                    const gcY = curY + nodeH / 2 - GROUP_NODE_H / 2;
+                    const gColor = nd.group.color || '#6b7280';
+
+                    function countAll(n) { return n.tasks.length + n.children.reduce((s, c) => s + countAll(c), 0); }
+                    function countDone(n) { return n.tasks.filter(t => t.completed).length + n.children.reduce((s, c) => s + countDone(c), 0); }
+
+                    const groupNode = createNode('group-node', colX, gcY, GROUP_NODE_W, `
+                        <div class="mm-socket input" style="background:${gColor};border-color:${gColor};"></div>
+                        <div class="mm-node-header" style="background:${gColor};"><i class="fas fa-layer-group"></i> ${nd.group.name}</div>
+                        <div class="mm-node-body"><div style="font-size:0.8rem;color:var(--text-secondary);">${countDone(nd)}/${countAll(nd)} 完成</div></div>
+                        <div class="mm-socket output" style="background:${gColor};border-color:${gColor};"></div>
+                    `, () => showSubGroupDetail(project, nd.group));
+
+                    groupNode.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; groupNode.classList.add('drag-over'); });
+                    groupNode.addEventListener('dragleave', () => groupNode.classList.remove('drag-over'));
+                    groupNode.addEventListener('drop', e => {
+                        e.preventDefault(); groupNode.classList.remove('drag-over');
+                        const tid = e.dataTransfer.getData('text/mm-task-id');
+                        if (tid) mmMoveTaskToGroup(tid, nd.group.id === '__ungrouped__' ? null : nd.group.id);
+                    });
+                    canvas.appendChild(groupNode);
+
+                    connections.push({ fromX: pX + pW, fromY: pY + pH / 2, toX: colX, toY: gcY + GROUP_NODE_H / 2, color: gColor });
+
+                    // 渲染子分组（递归）
+                    if (nd.children.length > 0) {
+                        renderSubTree(nd.children, colX, GROUP_NODE_W, gcY, GROUP_NODE_H, curY);
+                    }
+
+                    // 渲染直属任务
+                    const taskStartY = nd.children.length > 0 ? curY + nd.children.reduce((s, c) => s + calcHeight(c) + NODE_V_GAP, 0) : curY;
+                    nd.tasks.forEach((task, ti) => {
+                        const taskY = taskStartY + ti * (TASK_NODE_H + NODE_V_GAP);
+                        const pLabel = { low: '低', medium: '中', high: '高' }[task.priority] || '中';
+                        const taskNode = createNode(`task-node ${task.completed ? 'completed' : ''}`, taskColX, taskY, TASK_NODE_W, `
+                            <div class="mm-socket input" style="background:${gColor};border-color:${gColor};"></div>
+                            <div class="mm-node-header" style="background:${task.completed ? 'var(--success-color)' : gColor};">
+                                <i class="fas ${task.completed ? 'fa-check-circle' : 'fa-circle'}"></i> ${pLabel}优先级
+                            </div>
+                            <div class="mm-node-body">
+                                <div class="mm-task-text">${task.text}</div>
+                                <div class="mm-task-meta">${task.date ? '<i class="far fa-calendar"></i> ' + task.date.substring(5) : ''} ${task.startTime ? '<i class="far fa-clock"></i> ' + task.startTime : ''}</div>
+                            </div>
+                        `, () => showTaskDetail(task));
+                        taskNode.draggable = true;
+                        taskNode.addEventListener('dragstart', e => { e.dataTransfer.setData('text/mm-task-id', String(task.id)); e.dataTransfer.effectAllowed = 'move'; taskNode.style.opacity = '0.5'; });
+                        taskNode.addEventListener('dragend', () => { taskNode.style.opacity = '1'; });
+                        canvas.appendChild(taskNode);
+                        connections.push({ fromX: colX + GROUP_NODE_W, fromY: gcY + GROUP_NODE_H / 2, toX: taskColX, toY: taskY + TASK_NODE_H / 2, color: gColor });
+                    });
+
+                    curY += nodeH + NODE_V_GAP;
+                });
+            }
+
+            let startRY = projectY - totalTreeH / 2 + PROJECT_NODE_H / 2;
+            if (startRY < 30) startRY = 30;
+            renderSubTree(tree, col1X, PROJECT_NODE_W, projectY, PROJECT_NODE_H, startRY);
+
+            connections.forEach(c => {
+                const dx = (c.toX - c.fromX) * 0.5;
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', `M ${c.fromX} ${c.fromY} C ${c.fromX + dx} ${c.fromY}, ${c.toX - dx} ${c.toY}, ${c.toX} ${c.toY}`);
+                path.setAttribute('stroke', c.color);
+                path.setAttribute('opacity', '0.6');
+                svg.appendChild(path);
             });
 
-            curY += nodeH + NODE_V_GAP;
-        });
-    }
-
-    let startRY = projectY - totalTreeH / 2 + PROJECT_NODE_H / 2;
-    if (startRY < 30) startRY = 30;
-    renderSubTree(tree, col1X, PROJECT_NODE_W, projectY, PROJECT_NODE_H, startRY);
-
-    connections.forEach(c => {
-        const dx = (c.toX - c.fromX) * 0.5;
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', `M ${c.fromX} ${c.fromY} C ${c.fromX + dx} ${c.fromY}, ${c.toX - dx} ${c.toY}, ${c.toX} ${c.toY}`);
-        path.setAttribute('stroke', c.color);
-        path.setAttribute('opacity', '0.6');
-        svg.appendChild(path);
-    });
-
-    const canvasW = maxColX + 100;
-    const canvasH = (startRY < 30 ? 30 : startRY) + totalTreeH + 100;
-    canvas.style.width = canvasW + 'px';
-    canvas.style.height = Math.max(canvasH, 600) + 'px';
-    svg.setAttribute('width', canvasW);
-    svg.setAttribute('height', Math.max(canvasH, 600));
-}
+            const canvasW = maxColX + 100;
+            const canvasH = (startRY < 30 ? 30 : startRY) + totalTreeH + 100;
+            canvas.style.width = canvasW + 'px';
+            canvas.style.height = Math.max(canvasH, 600) + 'px';
+            svg.setAttribute('width', canvasW);
+            svg.setAttribute('height', Math.max(canvasH, 600));
+        }
 
 // 创建节点DOM元素
 function createNode(classNames, x, y, width, innerHTML, onClick) {
@@ -229,50 +234,50 @@ window.closeMmPopup = function (id) {
 
 // ===== 添加分组 =====
 window.openMmAddGroup = function (presetParentId) {
-    document.getElementById('mmGroupNameInput').value = '';
-    // 填充父分组下拉框
-    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
-    const sel = document.getElementById('mmParentGroupSelect');
-    sel.innerHTML = '<option value="">顶层（直属项目）</option>';
-    if (project && project.subGroups) {
-        // 递归展开所有分组
-        function addOptions(groups, depth) {
-            groups.forEach(sg => {
-                const prefix = '—'.repeat(depth) + ' ';
-                sel.innerHTML += `<option value="${sg.id}">${prefix}${sg.name}</option>`;
-                const children = project.subGroups.filter(c => String(c.parentId) === String(sg.id));
-                if (children.length > 0) addOptions(children, depth + 1);
-            });
-        }
-        const topLevel = project.subGroups.filter(sg => !sg.parentId);
-        addOptions(topLevel, 1);
-    }
-    if (presetParentId) sel.value = String(presetParentId);
-    document.getElementById('mmAddGroupPopup').style.display = 'flex';
-    setTimeout(() => document.getElementById('mmGroupNameInput').focus(), 100);
-};
+            document.getElementById('mmGroupNameInput').value = '';
+            // 填充父分组下拉框
+            const project = state.projects.find(p => sameEntityId(p.id, currentMindmapProjectId));
+            const sel = document.getElementById('mmParentGroupSelect');
+            sel.innerHTML = '<option value="">顶层（直属项目）</option>';
+            if (project && project.subGroups) {
+                // 递归展开所有分组
+                function addOptions(groups, depth) {
+                    groups.forEach(sg => {
+                        const prefix = '—'.repeat(depth) + ' ';
+                        sel.innerHTML += `<option value="${sg.id}">${prefix}${sg.name}</option>`;
+                        const children = project.subGroups.filter(c => sameEntityId(c.parentId, sg.id));
+                        if (children.length > 0) addOptions(children, depth + 1);
+                    });
+                }
+                const topLevel = project.subGroups.filter(sg => !sg.parentId || sameEntityId(sg.parentId, project.id));
+                addOptions(topLevel, 1);
+            }
+            if (presetParentId) sel.value = String(presetParentId);
+            document.getElementById('mmAddGroupPopup').style.display = 'flex';
+            setTimeout(() => document.getElementById('mmGroupNameInput').focus(), 100);
+        };
 
 window.confirmAddSubGroup = function () {
-    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
-    if (!project) return;
-    if (!project.subGroups) project.subGroups = [];
+            const project = state.projects.find(p => sameEntityId(p.id, currentMindmapProjectId));
+            if (!project) return;
+            if (!project.subGroups) project.subGroups = [];
 
-    const name = document.getElementById('mmGroupNameInput').value.trim();
-    if (!name) return;
+            const name = document.getElementById('mmGroupNameInput').value.trim();
+            if (!name) return;
 
-    const parentId = document.getElementById('mmParentGroupSelect').value || null;
-    const randomColor = colors[Math.floor(Math.random() * 12)];
-    project.subGroups.push({
-        id: uniqueId(),
-        name: name,
-        color: randomColor,
-        parentId: parentId ? Number(parentId) : null
-    });
+            const parentId = document.getElementById('mmParentGroupSelect').value || null;
+            const randomColor = colors[Math.floor(Math.random() * 12)];
+            project.subGroups.push({
+                id: String(uniqueId()),
+                name: name,
+                color: randomColor,
+                parentId: parentId ? String(parentId) : String(project.id)
+            });
 
-    save();
-    closeMmPopup('mmAddGroupPopup');
-    renderMindmap();
-};
+            save();
+            closeMmPopup('mmAddGroupPopup');
+            renderMindmap();
+        };
 
 // 兼容旧调用
 window.addProjectSubGroup = window.openMmAddGroup;
@@ -298,43 +303,43 @@ window.openMmAddTask = function () {
 };
 
 window.confirmMmAddTask = function () {
-    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
-    if (!project) return;
+            const project = state.projects.find(p => sameEntityId(p.id, currentMindmapProjectId));
+            if (!project) return;
 
-    const text = document.getElementById('mmTaskTextInput').value.trim();
-    if (!text) return;
+            const text = document.getElementById('mmTaskTextInput').value.trim();
+            if (!text) return;
 
-    const date = document.getElementById('mmTaskDateInput').value;
-    const priority = document.getElementById('mmTaskPriorityInput').value;
-    const subGroupId = document.getElementById('mmTaskGroupInput').value || null;
-    const notes = document.getElementById('mmTaskNotesInput').value.trim();
+            const date = document.getElementById('mmTaskDateInput').value;
+            const priority = document.getElementById('mmTaskPriorityInput').value;
+            const subGroupId = document.getElementById('mmTaskGroupInput').value || null;
+            const notes = document.getElementById('mmTaskNotesInput').value.trim();
 
-    const newTodo = {
-        id: uniqueId(),
-        text: text,
-        completed: false,
-        date: date || null,
-        priority: priority,
-        notes: notes || '',
-        projectId: String(project.id),
-        projectName: project.name,
-        projectColor: project.color,
-        projectSubGroupId: subGroupId ? Number(subGroupId) : null,
-        subtasks: [],
-        startTime: null,
-        endTime: null,
-        groupId: null,
-        groupName: null,
-        groupColor: null,
-        createdAt: new Date().toISOString()
-    };
+            const newTodo = {
+                id: uniqueId(),
+                text: text,
+                completed: false,
+                date: date || null,
+                priority: priority,
+                notes: notes || '',
+                projectId: String(project.id),
+                projectName: project.name,
+                projectColor: project.color,
+                projectSubGroupId: subGroupId ? String(subGroupId) : null,
+                subtasks: [],
+                startTime: null,
+                endTime: null,
+                groupId: null,
+                groupName: null,
+                groupColor: null,
+                createdAt: new Date().toISOString()
+            };
 
-    state.todos.push(newTodo);
-    save();
-    closeMmPopup('mmAddTaskPopup');
-    renderMindmap();
-    showSyncToast('任务已添加到项目');
-};
+            state.todos.push(newTodo);
+            save();
+            closeMmPopup('mmAddTaskPopup');
+            renderMindmap();
+            showSyncToast('任务已添加到项目');
+        };
 
 // ===== 任务列表弹窗 =====
 window.showMmTaskList = function () {
@@ -379,23 +384,23 @@ window.showMmTaskList = function () {
 
 // 拖动任务到不同分组
 window.mmMoveTaskToGroup = function (taskId, targetGroupId) {
-    const task = state.todos.find(t => t.id === taskId);
-    if (!task) return;
+            const task = state.todos.find(t => sameEntityId(t.id, taskId));
+            if (!task) return;
 
-    // 避免无意义移动
-    const currentGroupId = task.projectSubGroupId || null;
-    if (String(currentGroupId) === String(targetGroupId)) return;
+            // 避免无意义移动
+            const currentGroupId = task.projectSubGroupId || null;
+            if (sameEntityId(currentGroupId, targetGroupId)) return;
 
-    task.projectSubGroupId = targetGroupId ? Number(targetGroupId) : null;
-    save();
-    renderMindmap();
+            task.projectSubGroupId = targetGroupId ? String(targetGroupId) : null;
+            save();
+            renderMindmap();
 
-    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
-    const sgName = targetGroupId
-        ? ((project && project.subGroups || []).find(sg => String(sg.id) === String(targetGroupId)) || {}).name || '未分类'
-        : '未分类';
-    showSyncToast(`已移动到「${sgName}」`);
-};
+            const project = state.projects.find(p => sameEntityId(p.id, currentMindmapProjectId));
+            const sgName = targetGroupId
+                ? ((project && project.subGroups || []).find(sg => sameEntityId(sg.id, targetGroupId)) || {}).name || '未分类'
+                : '未分类';
+            showSyncToast(`已移动到「${sgName}」`);
+        };
 
 // ===== 子分组 CRUD =====
 window.editSubGroup = function (subGroupId) {
@@ -425,26 +430,28 @@ window.editSubGroup = function (subGroupId) {
 };
 
 window.deleteSubGroup = async function (subGroupId) {
-    const project = state.projects.find(p => String(p.id) === String(currentMindmapProjectId));
-    if (!project) return;
+            const project = state.projects.find(p => sameEntityId(p.id, currentMindmapProjectId));
+            if (!project) return;
 
-    const tasksInGroup = state.todos.filter(t => String(t.projectSubGroupId) === String(subGroupId));
-    if (tasksInGroup.length > 0) {
-        const confirmed = await showConfirm(
-            '删除分组',
-            `该分组下有 ${tasksInGroup.length} 个任务，删除后任务将变为未分类。`,
-            ['取消', '确认删除']
-        );
-        if (confirmed === 0) return;
-        // 将任务移到未分类
-        tasksInGroup.forEach(t => { t.projectSubGroupId = null; });
-    }
+            const tasksInGroup = state.todos.filter(t =>
+                sameEntityId(t.projectId, project.id) && sameEntityId(t.projectSubGroupId, subGroupId)
+            );
+            if (tasksInGroup.length > 0) {
+                const confirmed = await showConfirm(
+                    '删除分组',
+                    `该分组下有 ${tasksInGroup.length} 个任务，删除后任务将变为未分类。`,
+                    ['取消', '确认删除']
+                );
+                if (confirmed === 0) return;
+                // 将任务移到未分类
+                tasksInGroup.forEach(t => { t.projectSubGroupId = null; });
+            }
 
-    project.subGroups = project.subGroups.filter(g => String(g.id) !== String(subGroupId));
-    save();
-    closeMmDetail();
-    renderMindmap();
-};
+            project.subGroups = project.subGroups.filter(g => !sameEntityId(g.id, subGroupId));
+            save();
+            closeMmDetail();
+            renderMindmap();
+        };
 
 window.assignTaskToSubGroup = function (taskId, subGroupId) {
     const task = state.todos.find(t => String(t.id) === String(taskId));
@@ -547,7 +554,7 @@ function showSubGroupDetail(project, subGroup) {
         ${tasks.map(t => `
             <div style="padding:12px;background:var(--bg-color);border-radius:var(--radius);margin-bottom:8px;border-left:4px solid ${t.completed ? 'var(--success-color)' : subGroup.color};">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-                    <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTodo(${t.id});setTimeout(()=>{renderMindmap();showSubGroupDetail(state.projects.find(p=>p.id==${project.id}),${JSON.stringify(subGroup).replace(/"/g, '&quot;')})},50);" style="width:16px;height:16px;">
+                    <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTodo(${t.id});setTimeout(()=>{renderMindmap();showSubGroupDetail(state.projects.find(p=>sameEntityId(p.id,${project.id})),${JSON.stringify(subGroup).replace(/"/g, '&quot;')})},50);" style="width:16px;height:16px;">
                     <span style="font-weight:600;${t.completed ? 'text-decoration:line-through;opacity:0.6;' : ''}">${t.text}</span>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;font-size:0.75rem;color:var(--text-secondary);">
@@ -581,9 +588,9 @@ function showTaskDetail(task) {
             <div style="font-weight:800;font-size:0.8rem;text-transform:uppercase;margin-bottom:8px;">子任务 (${completedSt}/${subtaskCount})</div>
             ${task.subtasks && task.subtasks.length > 0 ? task.subtasks.map(st => `
                 <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-color);">
-                    <input type="checkbox" ${st.completed ? 'checked' : ''} onchange="toggleSubtask(${task.id},${st.id});setTimeout(()=>{renderMindmap();showTaskDetail(state.todos.find(t=>t.id==${task.id}))},50);" style="width:16px;height:16px;cursor:pointer;">
+                    <input type="checkbox" ${st.completed ? 'checked' : ''} onchange="toggleSubtask(${task.id},${st.id});setTimeout(()=>{renderMindmap();showTaskDetail(state.todos.find(t=>sameEntityId(t.id,${task.id})))},50);" style="width:16px;height:16px;cursor:pointer;">
                     <span style="flex:1;${st.completed ? 'text-decoration:line-through;opacity:0.6;' : ''}">${st.text}</span>
-                    <button onclick="deleteSubtask(${task.id},${st.id});setTimeout(()=>{renderMindmap();showTaskDetail(state.todos.find(t=>t.id==${task.id}))},50);" style="background:none;border:none;color:var(--danger-color);cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button>
+                    <button onclick="deleteSubtask(${task.id},${st.id});setTimeout(()=>{renderMindmap();showTaskDetail(state.todos.find(t=>sameEntityId(t.id,${task.id})))},50);" style="background:none;border:none;color:var(--danger-color);cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button>
                 </div>
             `).join('') : '<div style="color:var(--text-secondary);font-size:0.85rem;padding:10px 0;">暂无子任务</div>'}
             <div style="display:flex;gap:8px;margin-top:12px;">
@@ -605,7 +612,7 @@ function showTaskDetail(task) {
         ${task.notes ? `<div style="padding:12px;background:var(--bg-color);border-radius:var(--radius);margin-bottom:15px;font-size:0.9rem;color:var(--text-secondary);">${task.notes}</div>` : ''}
         <div style="margin-bottom:15px;">
             <label style="font-weight:800;font-size:0.8rem;text-transform:uppercase;display:block;margin-bottom:6px;">所属分组</label>
-            <select onchange="assignTaskToSubGroup(${task.id}, this.value);setTimeout(()=>{renderMindmap();showTaskDetail(state.todos.find(t=>t.id==${task.id}))},50);"
+            <select onchange="assignTaskToSubGroup(${task.id}, this.value);setTimeout(()=>{renderMindmap();showTaskDetail(state.todos.find(t=>sameEntityId(t.id,${task.id})))},50);"
                     style="width:100%;padding:8px 12px;border:2px solid var(--border-color);border-radius:var(--radius);background:var(--bg-color);color:var(--text-main);">
                 ${groupOptions}
             </select>
@@ -613,7 +620,7 @@ function showTaskDetail(task) {
         ${subtasksHtml}
         <div style="display:flex;gap:8px;margin-top:20px;">
             <button class="btn" onclick="openEditTask(${task.id});closeMindmap();" style="flex:1;justify-content:center;"><i class="fas fa-pen"></i> 编辑</button>
-            <button class="btn" onclick="toggleTodo(${task.id});setTimeout(()=>{renderMindmap();showTaskDetail(state.todos.find(t=>t.id==${task.id}))},50);"
+            <button class="btn" onclick="toggleTodo(${task.id});setTimeout(()=>{renderMindmap();showTaskDetail(state.todos.find(t=>sameEntityId(t.id,${task.id})))},50);"
                     style="flex:1;justify-content:center;${task.completed ? 'color:var(--warning-color);border-color:var(--warning-color);' : 'color:var(--success-color);border-color:var(--success-color);'}">
                 <i class="fas ${task.completed ? 'fa-undo' : 'fa-check'}"></i> ${task.completed ? '撤销完成' : '标记完成'}
             </button>
@@ -621,4 +628,3 @@ function showTaskDetail(task) {
     `;
     document.getElementById('mmDetailPanel').classList.add('open');
 }
-

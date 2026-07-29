@@ -26,53 +26,61 @@ document.getElementById('addGroupBtn').onclick = () => {
 };
 
 window.openEditGroupModal = (id) => {
-    const g = state.groups.find(x => x.id === id);
-    if (!g) return;
-    state.editingGroupId = id;
-    document.getElementById('groupModalTitle').innerText = '编辑分组';
-    document.getElementById('groupNameInput').value = g.name;
-    state.selectedColorIndex = colors.indexOf(g.color);
-    initColorPicker();
-    openModal('groupModal');
-};
+            const g = state.groups.find(x => sameEntityId(x.id, id));
+            if (!g) return;
+            state.editingGroupId = id;
+            document.getElementById('groupModalTitle').innerText = '编辑分组';
+            document.getElementById('groupNameInput').value = g.name;
+            state.selectedColorIndex = colors.indexOf(g.color);
+            initColorPicker();
+            openModal('groupModal');
+        };
 
 window.saveGroup = () => {
-    const name = document.getElementById('groupNameInput').value.trim();
-    if (!name) return showSyncToast('名称不能为空', 'error');
-    const color = colors[state.selectedColorIndex];
+            const name = document.getElementById('groupNameInput').value.trim();
+            if (!name) return showSyncToast('名称不能为空', 'error');
+            const color = colors[state.selectedColorIndex];
 
-    if (state.editingGroupId) {
-        state.groups = state.groups.map(g => g.id === state.editingGroupId ? { ...g, name, color } : g);
-        state.todos = state.todos.map(t => t.groupId === state.editingGroupId ? { ...t, groupName: name, groupColor: color } : t);
-    } else {
-        state.groups.push({ id: 'g_' + Date.now(), name, color });
-    }
-    save();
-    closeModal('groupModal');
-    renderGroups();
-    renderTodos();
-};
+            if (state.editingGroupId) {
+                state.groups = state.groups.map(g => sameEntityId(g.id, state.editingGroupId) ? { ...g, name, color } : g);
+                state.todos = state.todos.map(t => sameEntityId(t.groupId, state.editingGroupId) ? { ...t, groupName: name, groupColor: color } : t);
+            } else {
+                state.groups.push({ id: `g_${uniqueId()}`, name, color });
+            }
+            save();
+            closeModal('groupModal');
+            renderGroups();
+            renderTodos();
+        };
 
 window.deleteGroup = async (id) => {
-    const confirmed = await showConfirm('删除分组', '删除分组将删除所有任务，确定？');
-    if (confirmed === 0) return;
-    // 记录分组下任务的删除ID
-    const tasksToDelete = state.todos.filter(t => t.groupId === id);
-    tasksToDelete.forEach(t => {
-        if (!state.deletedIds.includes(t.id)) {
-            state.deletedIds.push(t.id);
-        }
-    });
-    // 记录分组ID到 deletedIds
-    if (!state.deletedIds.includes(id)) {
-        state.deletedIds.push(id);
-    }
-    state.groups = state.groups.filter(g => g.id !== id);
-    state.todos = state.todos.filter(t => t.groupId !== id);
-    if (state.currentGroupId === id) state.currentGroupId = 'all';
-    save();
-    renderAll();
-};
+            const confirmed = await showConfirm(
+                '删除分组',
+                '删除分组后，该分组的任务会移到其他分组。确定删除？',
+                ['取消', '删除']
+            );
+            if (confirmed === 0) return;
+            let fallbackGroup = state.groups.find(g => !sameEntityId(g.id, id));
+            if (!fallbackGroup) {
+                fallbackGroup = { id: `g_${uniqueId()}`, name: '默认', color: '#3b82f6' };
+                state.groups.push(fallbackGroup);
+            }
+            state.todos = state.todos.map(t => sameEntityId(t.groupId, id) ? {
+                ...t,
+                groupId: fallbackGroup.id,
+                groupName: fallbackGroup.name,
+                groupColor: fallbackGroup.color
+            } : t);
+            // 记录分组ID到 deletedIds
+            const groupTombstone = entityTombstone('group', id);
+            if (!state.deletedIds.includes(groupTombstone)) {
+                state.deletedIds.push(groupTombstone);
+            }
+            state.groups = state.groups.filter(g => !sameEntityId(g.id, id));
+            if (sameEntityId(state.currentGroupId, id)) state.currentGroupId = 'all';
+            save();
+            renderAll();
+        };
 
 function renderGroups() {
     const l = document.getElementById('groupList');
@@ -168,7 +176,7 @@ window.selectProject = (id) => {
         if (categoryCustom) {
             const trigger = categoryCustom.querySelector('.custom-select-trigger');
             const options = categoryCustom.querySelectorAll('.custom-select-option');
-            const targetOption = Array.from(options).find(opt => opt.dataset.value == id);  // 使用 ==
+            const targetOption = Array.from(options).find(opt => sameEntityId(opt.dataset.value, id));
 
             if (targetOption && trigger) {
                 trigger.innerHTML = `<span style="display:flex;align-items:center;gap:8px;"><i class="fas fa-project-diagram" style="color:${project.color};"></i>${project.name}</span>`;
@@ -180,7 +188,7 @@ window.selectProject = (id) => {
     }, 150);
 
     // 检查该项目是否有任务 (原逻辑展开表单，已移除)
-    const projectTasks = state.todos.filter(t => String(t.projectId) == String(id));
+    const projectTasks = state.todos.filter(t => sameEntityId(t.projectId, id));
     // 移动端：关闭侧边栏
     if (window.innerWidth <= 768) {
         const sidebar = document.querySelector('.sidebar');
@@ -210,11 +218,11 @@ window.selectGroup = (id) => {
             setTimeout(() => {
                 const trigger = categoryCustom.querySelector('.custom-select-trigger');
                 const options = categoryCustom.querySelectorAll('.custom-select-option');
-                const targetOption = Array.from(options).find(opt => opt.dataset.value === id);
+                const targetOption = Array.from(options).find(opt => sameEntityId(opt.dataset.value, id));
 
                 if (targetOption && trigger) {
                     // 查找分组信息
-                    const g = state.groups.find(gr => gr.id === id);
+                    const g = state.groups.find(gr => sameEntityId(gr.id, id));
                     if (g) {
                         trigger.innerHTML = `<span style="display:flex;align-items:center;gap:8px;"><span class="group-color" style="width:12px;height:12px;border-radius:2px;border:2px solid var(--border-color);background:${g.color};flex-shrink:0;"></span>${g.name}</span>`;
                         trigger.dataset.value = id;
@@ -228,7 +236,7 @@ window.selectGroup = (id) => {
 
     // 检查该分组是否有任务 (原逻辑展开表单，已移除)
     if (id !== 'all') {
-        const groupTasks = state.todos.filter(t => t.groupId === id && !t.projectId);
+        const groupTasks = state.todos.filter(t => sameEntityId(t.groupId, id) && !t.projectId);
     }
 
     // 移动端：关闭侧边栏
@@ -277,4 +285,3 @@ function onGroupDropReorder(e, targetIndex) {
     save();
     renderGroups();
 };
-

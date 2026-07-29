@@ -58,60 +58,65 @@ let currentDrinkType = 'milktea';
         openModal('milkteaModal');
     };
 
-    window.saveMilkteaRecord = function () {
-        const dateStr = document.getElementById('mtDateInput').value;
-        const amount = parseFloat(document.getElementById('mtAmountInput').value);
-        const cost = parseFloat(document.getElementById('mtCostInput').value);
-        const sugar = currentDrinkType === 'milktea' ? document.getElementById('mtSugarInput').value : '';
-        const brand = (document.getElementById('mtBrandInput').value || '').trim();
-        const notes = document.getElementById('mtNotesInput').value.trim();
+window.saveMilkteaRecord = function () {
+                const dateStr = document.getElementById('mtDateInput').value;
+                const amount = parseFloat(document.getElementById('mtAmountInput').value);
+                const cost = parseFloat(document.getElementById('mtCostInput').value);
+                const sugar = currentDrinkType === 'milktea' ? document.getElementById('mtSugarInput').value : '';
+                const brand = (document.getElementById('mtBrandInput').value || '').trim();
+                const notes = document.getElementById('mtNotesInput').value.trim();
 
-        if (!dateStr || isNaN(amount) || amount <= 0) {
-            showSyncToast('请输入有效的日期和杯数');
-            return;
-        }
-        if (isNaN(cost) || cost <= 0) {
-            showSyncToast('请输入有效的金额');
-            return;
-        }
+                if (!dateStr || isNaN(amount) || amount <= 0) {
+                    showSyncToast('请输入有效的日期和杯数');
+                    return;
+                }
+                if (isNaN(cost) || cost <= 0) {
+                    showSyncToast('请输入有效的金额');
+                    return;
+                }
 
-        const record = {
-            id: uniqueId(),
-            date: dateStr,
-            amount,
-            cost,
-            sugar,
-            brand,
-            notes,
-            drinkType: currentDrinkType
-        };
+                const record = {
+                    id: uniqueDrinkId(currentDrinkType),
+                    date: dateStr,
+                    amount,
+                    price: cost / amount,
+                    cost,
+                    sugar,
+                    name: brand,
+                    brand,
+                    note: notes,
+                    notes,
+                    drinkType: currentDrinkType,
+                    updatedAt: new Date().toISOString()
+                };
 
-        // 存入对应数据集
-        if (currentDrinkType === 'coffee') {
-            state.coffee.records.push(record);
-        } else {
-            state.milktea.records.push(record);
-        }
+                // 存入对应数据集
+                if (currentDrinkType === 'coffee') {
+                    state.coffee.records.push(record);
+                } else {
+                    state.milktea.records.push(record);
+                }
 
-        // 同步到记账（支出）- 奶茶对应奶茶类、咖啡对应咖啡类
-        const category = currentDrinkType === 'coffee' ? '咖啡' : '奶茶';
-        const drinkLabel = currentDrinkType === 'coffee' ? '咖啡消费' : '奶茶消费';
-        const transaction = {
-            id: 'mt_' + record.id,
-            type: 'expense',
-            amount: cost,
-            category: category,
-            date: dateStr,
-            note: (brand ? brand + ' ' : '') + (notes || drinkLabel),
-            milkteaRecordId: record.id
-        };
-        state.transactions.push(transaction);
+                // 同步到记账（支出）- 奶茶对应奶茶类、咖啡对应咖啡类
+                const category = currentDrinkType === 'coffee' ? '咖啡' : '奶茶';
+                const drinkLabel = currentDrinkType === 'coffee' ? '咖啡消费' : '奶茶消费';
+                const transaction = {
+                    id: 'mt_' + record.id,
+                    type: 'expense',
+                    amount: cost,
+                    category: category,
+                    date: dateStr,
+                    note: (brand ? brand + ' ' : '') + (notes || drinkLabel),
+                    milkteaRecordId: record.id,
+                    updatedAt: record.updatedAt
+                };
+                state.transactions.push(transaction);
 
-        save();
-        closeModal('milkteaModal');
-        showSyncToast(currentDrinkType === 'coffee' ? '☕ 咖啡记录成功！' : '🧋 奶茶记录成功！');
-        renderMilkteaView();
-    };
+                save();
+                closeModal('milkteaModal');
+                showSyncToast(currentDrinkType === 'coffee' ? '☕ 咖啡记录成功！' : '🧋 奶茶记录成功！');
+                renderMilkteaView();
+            };
 
     window.openMilkteaSettings = function () {
         document.getElementById('mtWeeklyLimitInput').value = state.milktea.settings.weeklyLimit;
@@ -121,26 +126,29 @@ let currentDrinkType = 'milktea';
         openModal('milkteaSettingsModal');
     };
 
-    window.saveMilkteaSettings = function () {
-        const wLimit = parseInt(document.getElementById('mtWeeklyLimitInput').value, 10);
-        const mLimit = parseInt(document.getElementById('mtMonthlyLimitInput').value, 10);
-        const cfWLimit = parseInt(document.getElementById('cfWeeklyLimitInput').value, 10);
-        const cfMLimit = parseInt(document.getElementById('cfMonthlyLimitInput').value, 10);
+window.saveMilkteaSettings = function () {
+                const wLimit = parseInt(document.getElementById('mtWeeklyLimitInput').value, 10);
+                const mLimit = parseInt(document.getElementById('mtMonthlyLimitInput').value, 10);
+                const cfWLimit = parseInt(document.getElementById('cfWeeklyLimitInput').value, 10);
+                const cfMLimit = parseInt(document.getElementById('cfMonthlyLimitInput').value, 10);
 
-        if (isNaN(wLimit) || isNaN(mLimit) || wLimit < 0 || mLimit < 0 || isNaN(cfWLimit) || isNaN(cfMLimit) || cfWLimit < 0 || cfMLimit < 0) {
-            showSyncToast('请输入有效的额度');
-            return;
-        }
+                if (isNaN(wLimit) || isNaN(mLimit) || wLimit < 0 || mLimit < 0 || isNaN(cfWLimit) || isNaN(cfMLimit) || cfWLimit < 0 || cfMLimit < 0) {
+                    showSyncToast('请输入有效的额度');
+                    return;
+                }
 
-        state.milktea.settings.weeklyLimit = wLimit;
-        state.milktea.settings.monthlyLimit = mLimit;
-        state.coffee.settings.weeklyLimit = cfWLimit;
-        state.coffee.settings.monthlyLimit = cfMLimit;
-        save();
-        closeModal('milkteaSettingsModal');
-        showSyncToast('额度设定保存成功');
-        renderMilkteaView();
-    };
+                state.milktea.settings.weeklyLimit = wLimit;
+                state.milktea.settings.monthlyLimit = mLimit;
+                state.coffee.settings.weeklyLimit = cfWLimit;
+                state.coffee.settings.monthlyLimit = cfMLimit;
+                const settingsUpdatedAt = new Date().toISOString();
+                state.milktea.settings.updatedAt = settingsUpdatedAt;
+                state.coffee.settings.updatedAt = settingsUpdatedAt;
+                save();
+                closeModal('milkteaSettingsModal');
+                showSyncToast('额度设定保存成功');
+                renderMilkteaView();
+            };
 
     // 热力图当前显示月份（独立于今日）
     if (typeof state.mtHeatmapYear === 'undefined') {
@@ -157,12 +165,14 @@ let currentDrinkType = 'milktea';
     };
 
     // 获取当前筛选下的记录
-    function getDrinkRecords() {
-        const filter = state.drinkViewFilter;
-        if (filter === 'milktea') return state.milktea.records;
-        if (filter === 'coffee') return state.coffee.records;
-        return [...state.milktea.records, ...state.coffee.records];
-    }
+function getDrinkRecords() {
+                const filter = state.drinkViewFilter;
+                const milktea = state.milktea.records.map(record => ({ ...record, drinkType: 'milktea' }));
+                const coffee = state.coffee.records.map(record => ({ ...record, drinkType: 'coffee' }));
+                if (filter === 'milktea') return milktea;
+                if (filter === 'coffee') return coffee;
+                return [...milktea, ...coffee];
+            }
 
     function getDrinkSettings() {
         const filter = state.drinkViewFilter;
@@ -401,52 +411,57 @@ let currentDrinkType = 'milktea';
     }
 
     // 渲染某日的饮品记录
-    function renderMilkteaDayRecords(dateStr) {
-        const container = document.getElementById('mtDayRecords');
-        const listEl = document.getElementById('mtDayRecordsList');
-        if (!container || !listEl) return;
+function renderMilkteaDayRecords(dateStr) {
+                const container = document.getElementById('mtDayRecords');
+                const listEl = document.getElementById('mtDayRecordsList');
+                if (!container || !listEl) return;
 
-        const dayRecords = getDrinkRecords().filter(r => r.date === dateStr);
-        if (dayRecords.length === 0) {
-            container.style.display = 'block';
-            listEl.innerHTML = `<div style="text-align: center; padding: 15px; color: var(--text-secondary); font-size: 0.85rem;">该日无记录</div>`;
-            return;
-        }
+                const dayRecords = getDrinkRecords().filter(r => r.date === dateStr);
+                if (dayRecords.length === 0) {
+                    container.style.display = 'block';
+                    listEl.innerHTML = `<div style="text-align: center; padding: 15px; color: var(--text-secondary); font-size: 0.85rem;">该日无记录</div>`;
+                    return;
+                }
 
-        container.style.display = 'block';
-        listEl.innerHTML = dayRecords.map(r => {
-            const typeIcon = (r.drinkType === 'coffee') ? '☕' : '🧋';
-            const defaultName = (r.drinkType === 'coffee') ? '咖啡' : '奶茶';
-            return `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: var(--radius);">
-                <div>
-                    <div style="font-weight: 800; font-size: 0.85rem;">${typeIcon} ${r.brand || defaultName} x${r.amount}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">${r.sugar || ''} ${r.cost > 0 ? '￥' + r.cost : ''}</div>
-                    ${r.notes ? `<div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;">${r.notes}</div>` : ''}
-                </div>
-                <button class="btn" onclick="deleteMilkteaRecord(${r.id})" style="padding: 4px 8px; font-size: 0.75rem; color: var(--danger-color); border-color: var(--danger-color);">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>`;
-        }).join('');
-    }
+                container.style.display = 'block';
+                listEl.innerHTML = dayRecords.map(r => {
+                    const typeIcon = (r.drinkType === 'coffee') ? '☕' : '🧋';
+                    const defaultName = (r.drinkType === 'coffee') ? '咖啡' : '奶茶';
+                    return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: var(--radius);">
+                        <div>
+                            <div style="font-weight: 800; font-size: 0.85rem;">${typeIcon} ${r.brand || defaultName} x${r.amount}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">${r.sugar || ''} ${r.cost > 0 ? '￥' + r.cost : ''}</div>
+                            ${r.notes ? `<div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;">${r.notes}</div>` : ''}
+                        </div>
+                        <button class="btn" onclick='deleteMilkteaRecord(${JSON.stringify(r.drinkType)}, ${JSON.stringify(String(r.id))})' style="padding: 4px 8px; font-size: 0.75rem; color: var(--danger-color); border-color: var(--danger-color);">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>`;
+                }).join('');
+            }
 
     // 删除饮品记录（同步删除对应交易）
-    window.deleteMilkteaRecord = function (recordId) {
-        // 在奶茶和咖啡记录中查找
-        let idx = state.milktea.records.findIndex(r => r.id === recordId);
-        if (idx !== -1) {
-            state.milktea.records.splice(idx, 1);
-        } else {
-            idx = state.coffee.records.findIndex(r => r.id === recordId);
-            if (idx !== -1) state.coffee.records.splice(idx, 1);
-        }
-        // 同步删除交易记录
-        const txIdx = state.transactions.findIndex(t => sameFinanceTransactionId(t.id, 'mt_' + recordId) || t.milkteaRecordId === recordId);
-        if (txIdx !== -1) state.transactions.splice(txIdx, 1);
-        save();
-        showSyncToast('记录已删除');
-        renderMilkteaView();
-    };
+window.deleteMilkteaRecord = function (type, recordId) {
+                const collection = type === 'coffee' ? state.coffee : state.milktea;
+                collection.records = collection.records.filter(r => String(r.id) !== String(recordId));
+                const expectedCategory = type === 'coffee' ? '咖啡' : '奶茶';
+                // 同步删除交易记录
+                const deletedTransactions = state.transactions.filter(t => (
+                    sameFinanceTransactionId(t.id, 'mt_' + recordId)
+                    || String(t.milkteaRecordId) === String(recordId)
+                ) && (
+                    String(recordId).startsWith(`${type}_`) || t.category === expectedCategory
+                ));
+                state.transactions = state.transactions.filter(t => !deletedTransactions.includes(t));
+                state.deletedIds.push(
+                    drinkRecordTombstone(type, recordId),
+                    ...deletedTransactions.map(financeTransactionTombstone)
+                );
+                state.deletedIds = [...new Set(state.deletedIds)];
+                save();
+                showSyncToast('记录已删除');
+                renderMilkteaView();
+            };
 
     // ===== 每日计划逻辑 =====

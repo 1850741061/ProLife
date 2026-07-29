@@ -7,9 +7,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test": "node --test tests/sync-contract.test.cjs",
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^8.0.10"
+    "vite": "^8.1.5"
   }
 }

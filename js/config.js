@@ -1,5 +1,54 @@
 // 应用常量和配置
 
+// All GitHub Pages repositories under 1850741061.github.io share one browser
+// localStorage origin. Give this application an isolated view so its auth
+// tokens, business cache and three-way sync base cannot be read or cleared by
+// the sibling ProLife builds.
+const PROLIFE_STORAGE_PREFIX = 'prolife_rebuild::';
+const rawLocalStorage = window.localStorage;
+const storageMigrationMarker = `${PROLIFE_STORAGE_PREFIX}storage_namespace_v1`;
+const legacyStorageKeysNotToCopy = new Set([
+    'user_id',
+    'access_token',
+    'refresh_token',
+    'sync_base_snapshots_v2',
+    'auth_session_isolation_v2'
+]);
+
+if (rawLocalStorage.getItem(storageMigrationMarker) !== 'complete') {
+    const legacyKeys = Array.from(
+        { length: rawLocalStorage.length },
+        (_, index) => rawLocalStorage.key(index)
+    ).filter(Boolean);
+    legacyKeys.forEach(key => {
+        if (key.includes('::') || legacyStorageKeysNotToCopy.has(key)) return;
+        const scopedKey = `${PROLIFE_STORAGE_PREFIX}${key}`;
+        if (rawLocalStorage.getItem(scopedKey) !== null) return;
+        const value = rawLocalStorage.getItem(key);
+        if (value !== null) rawLocalStorage.setItem(scopedKey, value);
+    });
+    rawLocalStorage.setItem(storageMigrationMarker, 'complete');
+}
+
+if (window.location.protocol === 'file:') {
+    // Electron profiles may contain a byte-for-byte copy of another build's
+    // single-use refresh token. Keep business data, but require this app to
+    // establish its own isolated session.
+    legacyStorageKeysNotToCopy.forEach(key => rawLocalStorage.removeItem(key));
+}
+
+const localStorage = Object.freeze({
+    getItem(key) {
+        return rawLocalStorage.getItem(`${PROLIFE_STORAGE_PREFIX}${String(key)}`);
+    },
+    setItem(key, value) {
+        rawLocalStorage.setItem(`${PROLIFE_STORAGE_PREFIX}${String(key)}`, String(value));
+    },
+    removeItem(key) {
+        rawLocalStorage.removeItem(`${PROLIFE_STORAGE_PREFIX}${String(key)}`);
+    }
+});
+
 const colors = [
     '#ef4444', '#f59e0b', '#eab308', '#84cc16', '#10b981',
     '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6',

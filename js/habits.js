@@ -67,43 +67,43 @@ function selectHabitColor(color) {
 }
 
 window.saveHabit = function () {
-    const name = document.getElementById('habitNameInput').value.trim();
-    if (!name) {
-        showSyncToast('请输入习惯名称', 'error');
-        return;
-    }
+            const name = document.getElementById('habitNameInput').value.trim();
+            if (!name) {
+                showSyncToast('请输入习惯名称', 'error');
+                return;
+            }
 
-    const frequency = document.getElementById('habitFrequency').value;
-    const notes = document.getElementById('habitNotes').value.trim();
+            const frequency = document.getElementById('habitFrequency').value;
+            const notes = document.getElementById('habitNotes').value.trim();
 
-    if (editingHabitId) {
-        // 编辑现有习惯
-        const habit = state.habits.find(h => h.id === editingHabitId);
-        if (habit) {
-            habit.name = name;
-            habit.icon = selectedHabitIcon;
-            habit.color = selectedHabitColor;
-            habit.frequency = frequency;
-            habit.notes = notes;
-        }
-    } else {
-        // 添加新习惯
-        const newHabit = {
-            id: uniqueId(),
-            name,
-            icon: selectedHabitIcon,
-            color: selectedHabitColor,
-            frequency,
-            notes,
-            createdAt: new Date().toISOString()
+            if (editingHabitId) {
+                // 编辑现有习惯
+                const habit = state.habits.find(h => sameEntityId(h.id, editingHabitId));
+                if (habit) {
+                    habit.name = name;
+                    habit.icon = selectedHabitIcon;
+                    habit.color = selectedHabitColor;
+                    habit.frequency = frequency;
+                    habit.notes = notes;
+                }
+            } else {
+                // 添加新习惯
+                const newHabit = {
+                    id: uniqueId(),
+                    name,
+                    icon: selectedHabitIcon,
+                    color: selectedHabitColor,
+                    frequency,
+                    notes,
+                    createdAt: new Date().toISOString()
+                };
+                state.habits.push(newHabit);
+            }
+
+            save();
+            closeModal('addHabitModal');
+            renderHabits();
         };
-        state.habits.push(newHabit);
-    }
-
-    save();
-    closeModal('addHabitModal');
-    renderHabits();
-};
 
 function renderHabits() {
     const container = document.getElementById('habitList');
@@ -228,55 +228,75 @@ function getFrequencyLabel(frequency) {
 }
 
 window.toggleHabitCheckIn = function (habitId) {
-    const today = new Date().toISOString().split('T')[0];
+            const today = new Date().toISOString().split('T')[0];
+            const tombstone = habitRecordTombstone(habitId, today);
+            const eventTime = nextHabitRecordEventTime(
+                state.habitRecords,
+                state.deletedIds,
+                habitId,
+                today
+            );
 
-    if (!state.habitRecords[habitId]) {
-        state.habitRecords[habitId] = {};
-    }
+            if (!state.habitRecords[habitId]) {
+                state.habitRecords[habitId] = {};
+            }
 
-    if (state.habitRecords[habitId][today]) {
-        // 取消打卡
-        delete state.habitRecords[habitId][today];
-    } else {
-        // 打卡
-        state.habitRecords[habitId][today] = Date.now();
-    }
+            if (state.habitRecords[habitId][today]) {
+                // 取消打卡
+                delete state.habitRecords[habitId][today];
+                state.deletedIds = [...new Set([
+                    ...state.deletedIds.filter(id => String(id) !== tombstone),
+                    tombstone,
+                    habitRecordDeleteEvent(habitId, today, eventTime)
+                ])];
+            } else {
+                // 打卡
+                state.habitRecords[habitId][today] = eventTime;
+                state.deletedIds = [...new Set([
+                    ...state.deletedIds.filter(id => String(id) !== tombstone).map(String),
+                    habitRecordLiveEvent(habitId, today, eventTime)
+                ])];
+            }
 
-    save();
-    renderHabits();
-};
+            save();
+            renderHabits();
+        };
 
 window.editHabit = function (habitId) {
-    const habit = state.habits.find(h => h.id === habitId);
-    if (!habit) return;
+            const habit = state.habits.find(h => sameEntityId(h.id, habitId));
+            if (!habit) return;
 
-    editingHabitId = habitId;
-    selectedHabitIcon = habit.icon;
-    selectedHabitColor = habit.color;
+            editingHabitId = habitId;
+            selectedHabitIcon = habit.icon;
+            selectedHabitColor = habit.color;
 
-    document.getElementById('habitModalTitle').textContent = '编辑习惯';
-    document.getElementById('habitNameInput').value = habit.name;
-    document.getElementById('habitFrequency').value = habit.frequency;
-    document.getElementById('habitNotes').value = habit.notes || '';
+            document.getElementById('habitModalTitle').textContent = '编辑习惯';
+            document.getElementById('habitNameInput').value = habit.name;
+            document.getElementById('habitFrequency').value = habit.frequency;
+            document.getElementById('habitNotes').value = habit.notes || '';
 
-    renderHabitIcons();
-    renderHabitColors();
+            renderHabitIcons();
+            renderHabitColors();
 
-    openModal('addHabitModal');
-};
+            openModal('addHabitModal');
+        };
 
 window.deleteHabit = async function (habitId) {
-    const confirmed = await showConfirm('删除习惯', '确定要删除这个习惯吗？打卡记录也会被删除。');
-    if (confirmed === 0) return;
+            const confirmed = await showConfirm(
+                '删除习惯',
+                '确定要删除这个习惯吗？打卡记录也会被删除。',
+                ['取消', '删除']
+            );
+            if (confirmed === 0) return;
 
-    // 记录删除的ID
-    if (!state.deletedIds.includes(habitId)) {
-        state.deletedIds.push(habitId);
-    }
-    state.habits = state.habits.filter(h => h.id !== habitId);
-    delete state.habitRecords[habitId];
+            // 记录删除的ID
+            const tombstone = entityTombstone('habit', habitId);
+            if (!state.deletedIds.includes(tombstone)) {
+                state.deletedIds.push(tombstone);
+            }
+            state.habits = state.habits.filter(h => !sameEntityId(h.id, habitId));
+            delete state.habitRecords[habitId];
 
-    save();
-    renderHabits();
-};
-
+            save();
+            renderHabits();
+        };

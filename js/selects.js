@@ -2,107 +2,107 @@
 
 
 function updateGroupSelects() {
-    // 更新分类选择器（合并分组、项目）
-    const categoryCustom = document.getElementById('categorySelectCustom');
-    const categoryNative = document.getElementById('categorySelect');
+            // 更新分类选择器（合并分组、项目）
+            const categoryCustom = document.getElementById('categorySelectCustom');
+            const categoryNative = document.getElementById('categorySelect');
 
-    // 如果元素不存在，直接返回（可能在非待办视图）
-    if (!categoryCustom || !categoryNative) return;
+            // 如果元素不存在，直接返回（可能在非待办视图）
+            if (!categoryCustom || !categoryNative) return;
 
-    const categoryOptions = categoryCustom.querySelector('.custom-select-options');
-    const categoryTrigger = categoryCustom.querySelector('.custom-select-trigger');
+            const categoryOptions = categoryCustom.querySelector('.custom-select-options');
+            const categoryTrigger = categoryCustom.querySelector('.custom-select-trigger');
 
-    // 确定当前应该选择的值
-    let currentValue = null;
-    if (state.currentProjectId) {
-        currentValue = state.currentProjectId;
-    } else if (state.currentGroupId && state.currentGroupId !== 'all') {
-        currentValue = state.currentGroupId;
-    }
+            // 确定当前应该选择的值
+            let currentValue = null;
+            if (state.currentProjectId) {
+                currentValue = state.currentProjectId;
+            } else if (state.currentGroupId && state.currentGroupId !== 'all') {
+                currentValue = state.currentGroupId;
+            }
 
-    categoryOptions.innerHTML = '';
-    categoryNative.innerHTML = '';
+            categoryOptions.innerHTML = '';
+            categoryNative.innerHTML = '';
 
-    // 1. 添加分组（如果有分组）
-    if (state.groups.length > 0) {
-        // 分组分界线
-        const groupDivider = document.createElement('div');
-        groupDivider.className = 'custom-select-divider';
-        groupDivider.innerHTML = '分组';
-        categoryOptions.appendChild(groupDivider);
+            // 1. 添加分组（如果有分组）
+            if (state.groups.length > 0) {
+                // 分组分界线
+                const groupDivider = document.createElement('div');
+                groupDivider.className = 'custom-select-divider';
+                groupDivider.innerHTML = '分组';
+                categoryOptions.appendChild(groupDivider);
 
-        state.groups.forEach(g => {
-            const opt = document.createElement('option');
-            opt.value = g.id;
-            opt.setAttribute('data-type', 'group');
-            opt.innerText = g.name;
-            categoryNative.appendChild(opt);
+                state.groups.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.id;
+                    opt.setAttribute('data-type', 'group');
+                    opt.innerText = g.name;
+                    categoryNative.appendChild(opt);
 
-            const optionDiv = document.createElement('div');
-            optionDiv.className = 'custom-select-option';
-            optionDiv.dataset.value = g.id;
-            optionDiv.dataset.type = 'group';
-            optionDiv.innerHTML = `<span style="display:flex;align-items:center;gap:8px;flex:1;"><span class="group-color" style="width:12px;height:12px;border-radius:2px;border:2px solid var(--border-color);background:${g.color};flex-shrink:0;"></span>${g.name}</span><span class="category-type-label group">分组</span>`;
-            optionDiv.addEventListener('click', (e) => {
-                e.stopPropagation();
-                categoryTrigger.innerHTML = `<span style="display:flex;align-items:center;gap:8px;"><span class="group-color" style="width:12px;height:12px;border-radius:2px;border:2px solid var(--border-color);background:${g.color};flex-shrink:0;"></span>${g.name}</span>`;
-                categoryTrigger.dataset.value = g.id;
-                categoryNative.value = g.id;
-                categoryOptions.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
-                optionDiv.classList.add('selected');
-                categoryCustom.classList.remove('open');
-            });
-            categoryOptions.appendChild(optionDiv);
-        });
-    }
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'custom-select-option';
+                    optionDiv.dataset.value = g.id;
+                    optionDiv.dataset.type = 'group';
+                    optionDiv.innerHTML = `<span style="display:flex;align-items:center;gap:8px;flex:1;"><span class="group-color" style="width:12px;height:12px;border-radius:2px;border:2px solid var(--border-color);background:${g.color};flex-shrink:0;"></span>${g.name}</span><span class="category-type-label group">分组</span>`;
+                    optionDiv.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        categoryTrigger.innerHTML = `<span style="display:flex;align-items:center;gap:8px;"><span class="group-color" style="width:12px;height:12px;border-radius:2px;border:2px solid var(--border-color);background:${g.color};flex-shrink:0;"></span>${g.name}</span>`;
+                        categoryTrigger.dataset.value = g.id;
+                        categoryNative.value = g.id;
+                        categoryOptions.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+                        optionDiv.classList.add('selected');
+                        categoryCustom.classList.remove('open');
+                    });
+                    categoryOptions.appendChild(optionDiv);
+                });
+            }
 
-    // 2. 添加项目（如果有项目）
-    if (state.projects.length > 0) {
-        // 项目分界线
-        const projectDivider = document.createElement('div');
-        projectDivider.className = 'custom-select-divider';
-        projectDivider.innerHTML = '项目';
-        categoryOptions.appendChild(projectDivider);
+            // 2. 添加项目（如果有项目）
+            if (state.projects.length > 0) {
+                // 项目分界线
+                const projectDivider = document.createElement('div');
+                projectDivider.className = 'custom-select-divider';
+                projectDivider.innerHTML = '项目';
+                categoryOptions.appendChild(projectDivider);
 
-        state.projects.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.setAttribute('data-type', 'project');
-            opt.innerText = p.name;
-            categoryNative.appendChild(opt);
+                state.projects.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.setAttribute('data-type', 'project');
+                    opt.innerText = p.name;
+                    categoryNative.appendChild(opt);
 
-            const optionDiv = document.createElement('div');
-            optionDiv.className = 'custom-select-option';
-            optionDiv.dataset.value = p.id;
-            optionDiv.dataset.type = 'project';
-            optionDiv.innerHTML = `<span style="display:flex;align-items:center;gap:8px;flex:1;"><i class="fas fa-project-diagram" style="color:${p.color};"></i>${p.name}</span><span class="category-type-label project">项目</span>`;
-            optionDiv.addEventListener('click', (e) => {
-                e.stopPropagation();
-                categoryTrigger.innerHTML = `<span style="display:flex;align-items:center;gap:8px;"><i class="fas fa-project-diagram" style="color:${p.color};"></i>${p.name}</span>`;
-                categoryTrigger.dataset.value = p.id;
-                categoryNative.value = p.id;
-                categoryOptions.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
-                optionDiv.classList.add('selected');
-                categoryCustom.classList.remove('open');
-            });
-            categoryOptions.appendChild(optionDiv);
-        });
-    }
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'custom-select-option';
+                    optionDiv.dataset.value = p.id;
+                    optionDiv.dataset.type = 'project';
+                    optionDiv.innerHTML = `<span style="display:flex;align-items:center;gap:8px;flex:1;"><i class="fas fa-project-diagram" style="color:${p.color};"></i>${p.name}</span><span class="category-type-label project">项目</span>`;
+                    optionDiv.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        categoryTrigger.innerHTML = `<span style="display:flex;align-items:center;gap:8px;"><i class="fas fa-project-diagram" style="color:${p.color};"></i>${p.name}</span>`;
+                        categoryTrigger.dataset.value = p.id;
+                        categoryNative.value = p.id;
+                        categoryOptions.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+                        optionDiv.classList.add('selected');
+                        categoryCustom.classList.remove('open');
+                    });
+                    categoryOptions.appendChild(optionDiv);
+                });
+            }
 
-    // 恢复选中状态：自动选择当前分组/项目
-    if (currentValue && (state.groups.find(g => g.id === currentValue) || state.projects.find(p => p.id === currentValue))) {
-        setCustomSelectValue('categorySelectCustom', currentValue);
-    } else if (state.groups.length > 0) {
-        // 默认选择第一个分组
-        setCustomSelectValue('categorySelectCustom', state.groups[0].id);
-    } else if (state.projects.length > 0) {
-        // 如果没有分组，选择第一个项目
-        setCustomSelectValue('categorySelectCustom', state.projects[0].id);
-    }
+            // 恢复选中状态：自动选择当前分组/项目
+            if (currentValue && (state.groups.find(g => sameEntityId(g.id, currentValue)) || state.projects.find(p => sameEntityId(p.id, currentValue)))) {
+                setCustomSelectValue('categorySelectCustom', currentValue);
+            } else if (state.groups.length > 0) {
+                // 默认选择第一个分组
+                setCustomSelectValue('categorySelectCustom', state.groups[0].id);
+            } else if (state.projects.length > 0) {
+                // 如果没有分组，选择第一个项目
+                setCustomSelectValue('categorySelectCustom', state.projects[0].id);
+            }
 
-    // 重新初始化选择器的点击事件
-    initCustomSelect('categorySelectCustom');
-}
+            // 重新初始化选择器的点击事件
+            initCustomSelect('categorySelectCustom');
+        }
 
 // 初始化单个自定义选择器
 function initCustomSelect(customSelectId) {

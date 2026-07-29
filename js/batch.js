@@ -23,35 +23,36 @@ function initBatchMode() {
 
 // 切换任务选择状态
 window.toggleTodoSelection = (id) => {
-    if (state.selectedTodos.has(id)) {
-        state.selectedTodos.delete(id);
-    } else {
-        state.selectedTodos.add(id);
-    }
-    document.getElementById('selectedCount').innerText = state.selectedTodos.size;
+            const key = String(id);
+            if (state.selectedTodos.has(key)) {
+                state.selectedTodos.delete(key);
+            } else {
+                state.selectedTodos.add(key);
+            }
+            document.getElementById('selectedCount').innerText = state.selectedTodos.size;
 
-    // 更新复选框状态
-    const checkbox = document.getElementById(`batch-checkbox-${id}`);
-    if (checkbox) checkbox.checked = state.selectedTodos.has(id);
-};
+            // 更新复选框状态
+            const checkbox = document.getElementById(`batch-checkbox-${id}`);
+            if (checkbox) checkbox.checked = state.selectedTodos.has(key);
+        };
 
 // 全选
 window.selectAllTodos = () => {
-    let list = state.todos;
-    if (state.currentGroupId !== 'all') list = list.filter(t => t.groupId === state.currentGroupId);
-    if (state.filter === 'active') list = list.filter(t => !t.completed);
-    if (state.filter === 'completed') list = list.filter(t => t.completed);
-    if (state.searchQuery) {
-        list = list.filter(t =>
-            t.text.toLowerCase().includes(state.searchQuery) ||
-            (t.notes && t.notes.toLowerCase().includes(state.searchQuery))
-        );
-    }
+            let list = state.todos;
+            if (state.currentGroupId !== 'all') list = list.filter(t => t.groupId === state.currentGroupId);
+            if (state.filter === 'active') list = list.filter(t => !t.completed);
+            if (state.filter === 'completed') list = list.filter(t => t.completed);
+            if (state.searchQuery) {
+                list = list.filter(t =>
+                    t.text.toLowerCase().includes(state.searchQuery) ||
+                    (t.notes && t.notes.toLowerCase().includes(state.searchQuery))
+                );
+            }
 
-    list.forEach(t => state.selectedTodos.add(t.id));
-    document.getElementById('selectedCount').innerText = state.selectedTodos.size;
-    renderTodos();
-};
+            list.forEach(t => state.selectedTodos.add(String(t.id)));
+            document.getElementById('selectedCount').innerText = state.selectedTodos.size;
+            renderTodos();
+        };
 
 // 取消全选
 window.deselectAllTodos = () => {
@@ -62,48 +63,50 @@ window.deselectAllTodos = () => {
 
 // 批量完成
 window.batchCompleteTodos = () => {
-    if (state.selectedTodos.size === 0) {
-        showSyncToast('请先选择任务', 'error');
-        return;
-    }
+            if (state.selectedTodos.size === 0) {
+                showSyncToast('请先选择任务', 'error');
+                return;
+            }
 
-    state.todos = state.todos.map(t =>
-        state.selectedTodos.has(t.id) ? { ...t, completed: true } : t
-    );
+            const count = state.selectedTodos.size;
+            state.todos = state.todos.map(t =>
+                state.selectedTodos.has(String(t.id)) ? { ...t, completed: true } : t
+            );
 
-    state.selectedTodos.clear();
-    save();
-    renderTodos();
-    showSyncToast(`已标记 ${state.selectedTodos.size} 项为完成`);
-};
+            state.selectedTodos.clear();
+            save();
+            renderTodos();
+            showSyncToast(`已标记 ${count} 项为完成`);
+        };
 
 // 批量删除
 window.batchDeleteTodos = async () => {
-    if (state.selectedTodos.size === 0) {
-        showSyncToast('请先选择任务', 'error');
-        return;
-    }
+            if (state.selectedTodos.size === 0) {
+                showSyncToast('请先选择任务', 'error');
+                return;
+            }
 
-    const confirmed = await showConfirm(
-        '批量删除任务',
-        `确定删除选中的 ${state.selectedTodos.size} 项任务？`,
-        ['取消', '删除']
-    );
-    if (confirmed === 0) return;
+            const confirmed = await showConfirm(
+                '批量删除任务',
+                `确定删除选中的 ${state.selectedTodos.size} 项任务？`,
+                ['取消', '删除']
+            );
+            if (confirmed === 0) return;
 
-    const count = state.selectedTodos.size;
-    // 记录所有删除的ID
-    state.selectedTodos.forEach(id => {
-        if (!state.deletedIds.includes(id)) {
-            state.deletedIds.push(id);
-        }
-    });
-    state.todos = state.todos.filter(t => !state.selectedTodos.has(t.id));
-    state.selectedTodos.clear();
-    save();
-    renderTodos();
-    showSyncToast(`已删除 ${count} 项任务`);
-};
+            const count = state.selectedTodos.size;
+            // 记录所有删除的ID
+            state.selectedTodos.forEach(id => {
+                const tombstone = entityTombstone('todo', id);
+                if (!state.deletedIds.includes(tombstone)) {
+                    state.deletedIds.push(tombstone);
+                }
+            });
+            state.todos = state.todos.filter(t => !state.selectedTodos.has(String(t.id)));
+            state.selectedTodos.clear();
+            save();
+            renderTodos();
+            showSyncToast(`已删除 ${count} 项任务`);
+        };
 
 // 批量移动分组
 window.batchMoveTodos = () => {
@@ -198,68 +201,68 @@ function updateBatchMoveCategorySelect() {
 
 // 确认批量移动
 window.confirmBatchMove = () => {
-    const trigger = document.getElementById('batchMoveCategorySelectCustom').querySelector('.custom-select-trigger');
-    const targetId = trigger.dataset.value;
-    const targetType = trigger.dataset.type;
+            const trigger = document.getElementById('batchMoveCategorySelectCustom').querySelector('.custom-select-trigger');
+            const targetId = trigger.dataset.value;
+            const targetType = trigger.dataset.type;
 
-    if (!targetId || !targetType) {
-        showSyncToast('请选择移动目标', 'error');
-        return;
-    }
+            if (!targetId || !targetType) {
+                showSyncToast('请选择移动目标', 'error');
+                return;
+            }
 
-    const count = state.selectedTodos.size;
+            const count = state.selectedTodos.size;
 
-    if (targetType === 'group') {
-        // 移动到分组
-        const targetGroup = state.groups.find(g => g.id === targetId);
-        if (!targetGroup) return;
+            if (targetType === 'group') {
+                // 移动到分组
+                const targetGroup = state.groups.find(g => sameEntityId(g.id, targetId));
+                if (!targetGroup) return;
 
-        state.todos = state.todos.map(t =>
-            state.selectedTodos.has(t.id)
-                ? {
-                    ...t,
-                    groupId: targetGroup.id,
-                    groupName: targetGroup.name,
-                    groupColor: targetGroup.color,
-                    projectId: null,
-                    projectName: null,
-                    projectColor: null
-                }
-                : t
-        );
+                state.todos = state.todos.map(t =>
+                    state.selectedTodos.has(String(t.id))
+                        ? {
+                            ...t,
+                            groupId: targetGroup.id,
+                            groupName: targetGroup.name,
+                            groupColor: targetGroup.color,
+                            projectId: null,
+                            projectName: null,
+                            projectColor: null
+                        }
+                        : t
+                );
 
-        state.selectedTodos.clear();
-        save();
-        closeModal('batchMoveModal');
-        renderTodos();
-        showSyncToast(`已将 ${count} 项任务移动到 "${targetGroup.name}"`);
-    } else {
-        // 移动到项目
-        const targetProject = state.projects.find(p => String(p.id) === String(targetId));
-        if (!targetProject) return;
+                state.selectedTodos.clear();
+                save();
+                closeModal('batchMoveModal');
+                renderTodos();
+                showSyncToast(`已将 ${count} 项任务移动到 "${targetGroup.name}"`);
+            } else {
+                // 移动到项目
+                const targetProject = state.projects.find(p => sameEntityId(p.id, targetId));
+                if (!targetProject) return;
 
-        state.todos = state.todos.map(t =>
-            state.selectedTodos.has(t.id)
-                ? {
-                    ...t,
-                    projectId: String(targetProject.id),
-                    projectName: targetProject.name,
-                    projectColor: targetProject.color,
-                    groupId: null,
-                    groupName: null,
-                    groupColor: null
-                }
-                : t
-        );
+                state.todos = state.todos.map(t =>
+                    state.selectedTodos.has(String(t.id))
+                        ? {
+                            ...t,
+                            projectId: String(targetProject.id),
+                            projectName: targetProject.name,
+                            projectColor: targetProject.color,
+                            projectSubGroupId: null,
+                            groupId: null,
+                            groupName: null,
+                            groupColor: null
+                        }
+                        : t
+                );
 
-        state.selectedTodos.clear();
-        save();
-        closeModal('batchMoveModal');
-        renderTodos();
-        showSyncToast(`已将 ${count} 项任务移动到项目 "${targetProject.name}"`);
-    }
-};
+                state.selectedTodos.clear();
+                save();
+                closeModal('batchMoveModal');
+                renderTodos();
+                showSyncToast(`已将 ${count} 项任务移动到项目 "${targetProject.name}"`);
+            }
+        };
 
 // --- 3. 提醒通知功能 ---
 let notificationCheckInterval = null;
-

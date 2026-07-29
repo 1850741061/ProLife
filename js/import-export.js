@@ -918,7 +918,7 @@ async function importCSV(file) {
                         } else {
                             // 创建新分组
                             const newGroup = {
-                                id: 'g_' + Date.now() + '_' + index,
+                                id: `g_${uniqueId()}_${index}`,
                                 name: gName,
                                 color: colors[state.groups.length % colors.length]
                             };

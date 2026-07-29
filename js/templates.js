@@ -74,58 +74,58 @@ function renderTemplateList() {
 
 // 保存当前编辑任务为模板（打开输入模态框）
 window.saveAsTemplate = function () {
-    if (!state.editingId) {
-        showSyncToast('请先编辑一个任务', 'error');
-        return;
-    }
+            if (!state.editingId) {
+                showSyncToast('请先编辑一个任务', 'error');
+                return;
+            }
 
-    const task = state.todos.find(t => t.id === state.editingId);
-    if (!task) return;
+            const task = state.todos.find(t => sameEntityId(t.id, state.editingId));
+            if (!task) return;
 
-    // 打开保存模板名称的模态框，并填入默认名称
-    document.getElementById('templateNameInput').value = task.text;
-    openModal('saveTemplateModal');
+            // 打开保存模板名称的模态框，并填入默认名称
+            document.getElementById('templateNameInput').value = task.text;
+            openModal('saveTemplateModal');
 
-    // 聚焦输入框
-    setTimeout(() => {
-        document.getElementById('templateNameInput').focus();
-        document.getElementById('templateNameInput').select();
-    }, 100);
-};
+            // 聚焦输入框
+            setTimeout(() => {
+                document.getElementById('templateNameInput').focus();
+                document.getElementById('templateNameInput').select();
+            }, 100);
+        };
 
 // 确认保存模板
 window.confirmSaveTemplate = function () {
-    const templateName = document.getElementById('templateNameInput').value.trim();
+            const templateName = document.getElementById('templateNameInput').value.trim();
 
-    if (!templateName) {
-        showSyncToast('请输入模板名称', 'error');
-        return;
-    }
+            if (!templateName) {
+                showSyncToast('请输入模板名称', 'error');
+                return;
+            }
 
-    const task = state.todos.find(t => t.id === state.editingId);
-    if (!task) return;
+            const task = state.todos.find(t => sameEntityId(t.id, state.editingId));
+            if (!task) return;
 
-    const template = {
-        id: uniqueId(),
-        text: templateName,
-        notes: task.notes || '',
-        priority: task.priority,
-        groupId: task.groupId,
-        groupName: task.groupName,
-        groupColor: task.groupColor,
-        date: null, // 模板不保存具体日期
-        startTime: task.startTime || null,
-        endTime: task.endTime || null,
-        subtasks: task.subtasks || [],
-        createdAt: new Date().toISOString()
-    };
+            const template = {
+                id: uniqueId(),
+                text: templateName,
+                notes: task.notes || '',
+                priority: task.priority,
+                groupId: task.groupId,
+                groupName: task.groupName,
+                groupColor: task.groupColor,
+                date: null, // 模板不保存具体日期
+                startTime: task.startTime || null,
+                endTime: task.endTime || null,
+                subtasks: task.subtasks || [],
+                createdAt: new Date().toISOString()
+            };
 
-    state.templates.push(template);
-    save();
+            state.templates.push(template);
+            save();
 
-    closeModal('saveTemplateModal');
-    showSyncToast(`模板 "${templateName}" 已保存`);
-};
+            closeModal('saveTemplateModal');
+            showSyncToast(`模板 "${templateName}" 已保存`);
+        };
 
 // 从搜索结果应用模板
 function applyTemplate(templateId) {
@@ -134,56 +134,61 @@ function applyTemplate(templateId) {
 
 // 从模板创建新任务
 window.createFromTemplate = function (templateId) {
-    const template = state.templates.find(t => t.id === templateId);
-    if (!template) return;
+            const template = state.templates.find(t => sameEntityId(t.id, templateId));
+            if (!template) return;
 
-    const today = new Date().toISOString().split('T')[0];
+            const today = new Date().toISOString().split('T')[0];
 
-    const newTodo = {
-        id: uniqueId(),
-        text: template.text,
-        notes: template.notes,
-        completed: false,
-        priority: template.priority,
-        groupId: template.groupId,
-        groupName: template.groupName,
-        groupColor: template.groupColor,
-        date: today, // 使用今天的日期
-        startTime: template.startTime,
-        endTime: template.endTime,
-        subtasks: template.subtasks ? template.subtasks.map(st => ({
-            ...st,
-            id: uniqueId() + Math.random(), // 新的子任务 ID
-            completed: false // 重置完成状态
-        })) : [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    };
+            const newTodo = {
+                id: uniqueId(),
+                text: template.text,
+                notes: template.notes,
+                completed: false,
+                priority: template.priority,
+                groupId: template.groupId,
+                groupName: template.groupName,
+                groupColor: template.groupColor,
+                date: today, // 使用今天的日期
+                startTime: template.startTime,
+                endTime: template.endTime,
+                subtasks: template.subtasks ? template.subtasks.map(st => ({
+                    ...st,
+                    id: uniqueId() + Math.random(), // 新的子任务 ID
+                    completed: false // 重置完成状态
+                })) : [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
 
-    state.todos.unshift(newTodo);
-    save();
-    renderTodos();
-    closeModal('templateModal');
-    showSyncToast(`已从模板创建任务：${template.text}`);
-};
+            state.todos.unshift(newTodo);
+            save();
+            renderTodos();
+            closeModal('templateModal');
+            showSyncToast(`已从模板创建任务：${template.text}`);
+        };
 
 // 删除模板
 window.deleteTemplate = async function (templateId) {
-    const template = state.templates.find(t => t.id === templateId);
-    if (!template) return;
+            const template = state.templates.find(t => sameEntityId(t.id, templateId));
+            if (!template) return;
 
-    const confirmed = await showConfirm('删除模板', `确定删除模板 "${template.text}"？`);
-    if (confirmed === 0) return;
+            const confirmed = await showConfirm(
+                '删除模板',
+                `确定删除模板 "${template.text}"？`,
+                ['取消', '删除']
+            );
+            if (confirmed === 0) return;
 
-    // 记录删除ID
-    if (!state.deletedIds.includes(templateId)) {
-        state.deletedIds.push(templateId);
-    }
-    state.templates = state.templates.filter(t => t.id !== templateId);
-    save();
-    renderTemplateList();
-    showSyncToast('模板已删除');
-};
+            // 记录删除ID
+            const tombstone = entityTombstone('template', templateId);
+            if (!state.deletedIds.includes(tombstone)) {
+                state.deletedIds.push(tombstone);
+            }
+            state.templates = state.templates.filter(t => !sameEntityId(t.id, templateId));
+            save();
+            renderTemplateList();
+            showSyncToast('模板已删除');
+        };
 
 // 显示模板详情
 function showTemplateDetail(template) {

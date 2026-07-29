@@ -43,40 +43,40 @@ function selectProjectColor(color) {
 }
 
 window.saveProject = function () {
-    const name = document.getElementById('projectNameInput').value.trim();
-    if (!name) {
-        showSyncToast('请输入项目名称', 'error');
-        return;
-    }
+            const name = document.getElementById('projectNameInput').value.trim();
+            if (!name) {
+                showSyncToast('请输入项目名称', 'error');
+                return;
+            }
 
-    const description = document.getElementById('projectDescription').value.trim();
-    const deadline = document.getElementById('projectDeadline').value;
+            const description = document.getElementById('projectDescription').value.trim();
+            const deadline = document.getElementById('projectDeadline').value;
 
-    if (editingProjectId) {
-        const project = state.projects.find(p => p.id === editingProjectId);
-        if (project) {
-            project.name = name;
-            project.description = description;
-            project.deadline = deadline;
-            project.color = selectedProjectColor;
-        }
-    } else {
-        const newProject = {
-            id: uniqueId(),
-            name,
-            description,
-            deadline,
-            color: selectedProjectColor,
-            createdAt: new Date().toISOString()
+            if (editingProjectId) {
+                const project = state.projects.find(p => sameEntityId(p.id, editingProjectId));
+                if (project) {
+                    project.name = name;
+                    project.description = description;
+                    project.deadline = deadline;
+                    project.color = selectedProjectColor;
+                }
+            } else {
+                const newProject = {
+                    id: uniqueId(),
+                    name,
+                    description,
+                    deadline,
+                    color: selectedProjectColor,
+                    createdAt: new Date().toISOString()
+                };
+                state.projects.push(newProject);
+            }
+
+            save();
+            closeModal('addProjectModal');
+            renderProjects();
+            renderSidebarProjects();
         };
-        state.projects.push(newProject);
-    }
-
-    save();
-    closeModal('addProjectModal');
-    renderProjects();
-    renderSidebarProjects();
-};
 
 function renderProjects() {
     const container = document.getElementById('projectList');
@@ -201,107 +201,114 @@ window.viewProjectTodos = function (projectId) {
 
 // 清除项目筛选
 window.editProject = function (projectId) {
-    const project = state.projects.find(p => p.id === projectId);
-    if (!project) return;
+            const project = state.projects.find(p => sameEntityId(p.id, projectId));
+            if (!project) return;
 
-    editingProjectId = projectId;
-    selectedProjectColor = project.color;
+            editingProjectId = projectId;
+            selectedProjectColor = project.color;
 
-    document.getElementById('projectModalTitle').textContent = '编辑项目';
-    document.getElementById('projectNameInput').value = project.name;
-    document.getElementById('projectDescription').value = project.description || '';
-    document.getElementById('projectDeadline').value = project.deadline || '';
+            document.getElementById('projectModalTitle').textContent = '编辑项目';
+            document.getElementById('projectNameInput').value = project.name;
+            document.getElementById('projectDescription').value = project.description || '';
+            document.getElementById('projectDeadline').value = project.deadline || '';
 
-    renderProjectColors();
+            renderProjectColors();
 
-    openModal('addProjectModal');
-};
+            openModal('addProjectModal');
+        };
 
 window.deleteProject = async function (projectId) {
-    try {
-        const project = state.projects.find(p => p.id === projectId);
-        if (!project) return;
+            try {
+                const project = state.projects.find(p => sameEntityId(p.id, projectId));
+                if (!project) return;
 
-        // 检查该项目下是否有任务
-        const projectTasks = state.todos.filter(t => String(t.projectId) === String(projectId));
-        const defaultGroup = state.groups[0];
+                // 检查该项目下是否有任务
+                const projectTasks = state.todos.filter(t => sameEntityId(t.projectId, projectId));
+                const defaultGroup = state.groups[0];
 
-        if (projectTasks.length > 0) {
-            // 有任务，询问如何处理 - 提供三个选项
-            const action = await showConfirm(
-                `删除项目"${project.name}"`,
-                `该项目下有 ${projectTasks.length} 个任务，请选择处理方式：`,
-                ['取消删除', '删除项目下的所有任务', `保留任务并移至默认分组"${defaultGroup ? defaultGroup.name : '无'}"`]
-            );
+                if (projectTasks.length > 0) {
+                    // 有任务，询问如何处理 - 提供三个选项
+                    const action = await showConfirm(
+                        `删除项目"${project.name}"`,
+                        `该项目下有 ${projectTasks.length} 个任务，请选择处理方式：`,
+                        ['取消删除', '删除项目下的所有任务', `保留任务并移至默认分组"${defaultGroup ? defaultGroup.name : '无'}"`]
+                    );
 
-            if (action === 0) {
-                // 用户选择取消删除 - 直接返回
-                return;
-            } else if (action === 1) {
-                // 用户选择删除项目下的所有任务
-                projectTasks.forEach(t => {
-                    if (!state.deletedIds.includes(t.id)) {
-                        state.deletedIds.push(t.id);
-                    }
-                });
-                state.todos = state.todos.filter(t => String(t.projectId) !== String(projectId));
-            } else if (action === 2) {
-                // 用户选择移至默认分组
-                if (defaultGroup) {
-                    state.todos = state.todos.map(t => {
-                        if (String(t.projectId) === String(projectId)) {
-                            return {
-                                ...t,
-                                projectId: null,
-                                projectName: null,
-                                projectColor: null,
-                                groupId: defaultGroup.id,
-                                groupName: defaultGroup.name,
-                                groupColor: defaultGroup.color
-                            };
+                    if (action === 0) {
+                        // 用户选择取消删除 - 直接返回
+                        return;
+                    } else if (action === 1) {
+                        // 用户选择删除项目下的所有任务
+                        projectTasks.forEach(t => {
+                            const tombstone = entityTombstone('todo', t.id);
+                            if (!state.deletedIds.includes(tombstone)) {
+                                state.deletedIds.push(tombstone);
+                            }
+                        });
+                        state.todos = state.todos.filter(t => !sameEntityId(t.projectId, projectId));
+                    } else if (action === 2) {
+                        // 用户选择移至默认分组
+                        if (defaultGroup) {
+                            state.todos = state.todos.map(t => {
+                                if (sameEntityId(t.projectId, projectId)) {
+                                    return {
+                                        ...t,
+                                        projectId: null,
+                                        projectName: null,
+                                        projectColor: null,
+                                        projectSubGroupId: null,
+                                        groupId: defaultGroup.id,
+                                        groupName: defaultGroup.name,
+                                        groupColor: defaultGroup.color
+                                    };
+                                }
+                                return t;
+                            });
+                        } else {
+                            // 没有默认分组，删除任务时也必须写入墓碑，防止云端复活
+                            showSyncToast('没有默认分组，项目任务将被删除', 'warning');
+                            projectTasks.forEach(t => {
+                                const todoTombstone = entityTombstone('todo', t.id);
+                                if (!state.deletedIds.includes(todoTombstone)) state.deletedIds.push(todoTombstone);
+                            });
+                            state.todos = state.todos.filter(t => !sameEntityId(t.projectId, projectId));
                         }
-                        return t;
-                    });
+                    }
                 } else {
-                    // 没有默认分组，提示用户并删除任务
-                    showSyncToast('没有默认分组，项目任务将被删除', 'error');
-                    state.todos = state.todos.filter(t => String(t.projectId) !== String(projectId));
+                    // 没有任务，简单确认删除
+                    const confirmed = await showConfirm(
+                        `删除项目"${project.name}"`,
+                        '确定要删除这个项目吗？',
+                        ['取消', '删除']
+                    );
+
+                    if (confirmed === 0) return; // 取消删除
                 }
+
+                // 删除项目
+                const tombstone = entityTombstone('project', projectId);
+                if (!state.deletedIds.includes(tombstone)) {
+                    state.deletedIds.push(tombstone);
+                }
+                state.projects = state.projects.filter(p => !sameEntityId(p.id, projectId));
+
+                // 清除当前项目选择（如果删除的是当前选中的项目）
+                if (sameEntityId(state.currentProjectId, projectId)) {
+                    state.currentProjectId = null;
+                }
+
+                save();
+                renderProjects();
+                renderSidebarProjects();
+                renderTodos();
+                updateStats();
+
+                // 显示成功提示
+                showSyncToast(`项目"${project.name}"已删除`);
+            } catch (error) {
+                console.error('删除项目时出错:', error);
+                showSyncToast('删除项目失败，请重试', 'error');
             }
-        } else {
-            // 没有任务，简单确认删除
-            const confirmed = await showConfirm(
-                `删除项目"${project.name}"`,
-                '确定要删除这个项目吗？',
-                ['取消', '删除']
-            );
-
-            if (confirmed === 0) return; // 取消删除
-        }
-
-        // 删除项目
-        if (!state.deletedIds.includes(projectId)) {
-            state.deletedIds.push(projectId);
-        }
-        state.projects = state.projects.filter(p => p.id !== projectId);
-
-        // 清除当前项目选择（如果删除的是当前选中的项目）
-        if (String(state.currentProjectId) === String(projectId)) {
-            state.currentProjectId = null;
-        }
-
-        save();
-        renderProjects();
-        renderSidebarProjects();
-        renderTodos();
-        updateStats();
-
-        // 显示成功提示
-        showSyncToast(`项目"${project.name}"已删除`);
-    } catch (error) {
-        console.error('删除项目时出错:', error);
-        showSyncToast('删除项目失败，请重试', 'error');
-    }
-};
+        };
 
 // --- 2. 批量操作功能 ---

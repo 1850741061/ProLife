@@ -17,6 +17,8 @@ function backupAccountScopedLocalData(ownerUserId) {
                 milktea: ensureSyncObject(state.milktea),
                 coffee: ensureSyncObject(state.coffee),
                 dailyPlans: ensureSyncArray(state.dailyPlans),
+                ideas: ensureSyncArray(state.ideas),
+                ideaTags: ensureSyncArray(state.ideaTags),
                 deletedIds: ensureSyncArray(state.deletedIds)
             }
         };
@@ -65,8 +67,8 @@ function renderAll() {
 
 // --- 启动桌面小组件 ---
 window.launchWidget = function() {
-    if (typeof require !== 'undefined') {
-        const { ipcRenderer } = require('electron');
+    if (isElectron) {
+        const ipcRenderer = window.desktopAPI.ipc;
         ipcRenderer.send('launch-widget');
         ipcRenderer.once('widget-launch-result', (event, result) => {
             if (result.alreadyOpen) {
@@ -81,21 +83,71 @@ window.launchWidget = function() {
 };
 
 // 监听小组件数据变更
-if (typeof require !== 'undefined') {
-    const { ipcRenderer: ipcR } = require('electron');
+if (isElectron) {
+    const ipcR = window.desktopAPI.ipc;
     ipcR.on('refresh-main-data', () => {
         try {
-            const fs = require('fs');
-            const path = require('path');
-            const dataFile = path.join(process.env.APPDATA || '', 'ProLife', 'widget-data.json');
-            if (fs.existsSync(dataFile)) {
-                const raw = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
-                if (raw.todos) state.todos = raw.todos;
-                if (raw.projects) state.projects = raw.projects;
-                if (raw.dailyPlans) state.dailyPlans = raw.dailyPlans;
-                if (raw.groups) state.groups = raw.groups;
-                if (raw.ideas) state.ideas = raw.ideas;
-                if (raw.ideaTags) state.ideaTags = raw.ideaTags;
+            const serialized = window.desktopAPI.readWidgetData();
+            if (serialized) {
+                const raw = JSON.parse(serialized);
+                const legacyBase = {
+                    todos: ensureSyncArray(raw.todos),
+                    archivedTodos: ensureSyncArray(raw.archivedTodos),
+                    groups: ensureSyncArray(raw.groups),
+                    projects: ensureSyncArray(raw.projects),
+                    dailyPlans: ensureSyncArray(raw.dailyPlans),
+                    ideas: ensureSyncArray(raw.ideas),
+                    deletedIds: ensureSyncArray(raw.deletedIds || raw.deletedids)
+                };
+                const candidateBase = raw.syncBase && typeof raw.syncBase === 'object' && !Array.isArray(raw.syncBase)
+                    ? raw.syncBase
+                    : legacyBase;
+                const mergedDeletedIds = compactSyncTombstones(mergeSyncValue(
+                    ensureSyncArray(state.deletedIds),
+                    ensureSyncArray(raw.deletedIds || raw.deletedids),
+                    ensureSyncArray(candidateBase.deletedIds || candidateBase.deletedids)
+                ));
+                const todoCollections = reconcileTodoCollections(
+                    state.todos,
+                    state.archivedTodos,
+                    ensureSyncArray(raw.todos),
+                    ensureSyncArray(raw.archivedTodos),
+                    mergedDeletedIds,
+                    ensureSyncArray(candidateBase.todos),
+                    ensureSyncArray(candidateBase.archivedTodos)
+                );
+                state.todos = todoCollections.todos;
+                state.archivedTodos = todoCollections.archivedTodos;
+                state.groups = mergeEntityArrays(
+                    state.groups,
+                    ensureSyncArray(raw.groups),
+                    mergedDeletedIds,
+                    'group',
+                    ensureSyncArray(candidateBase.groups)
+                );
+                state.projects = mergeEntityArrays(
+                    state.projects,
+                    ensureSyncArray(raw.projects),
+                    mergedDeletedIds,
+                    'project',
+                    ensureSyncArray(candidateBase.projects)
+                );
+                state.dailyPlans = mergeEntityArrays(
+                    state.dailyPlans,
+                    ensureSyncArray(raw.dailyPlans),
+                    mergedDeletedIds,
+                    'daily-plan',
+                    ensureSyncArray(candidateBase.dailyPlans)
+                );
+                state.ideas = mergeEntityArrays(
+                    state.ideas,
+                    ensureSyncArray(raw.ideas),
+                    mergedDeletedIds,
+                    'idea',
+                    ensureSyncArray(candidateBase.ideas)
+                );
+                state.deletedIds = mergedDeletedIds;
+                syncIdeaTags();
                 const syncedThemeStyle = normalizeThemeStyle(raw.themePrefs?.style);
                 if (raw.themePrefs && THEME_STYLE_META[syncedThemeStyle]) {
                     themeState.style = syncedThemeStyle;
@@ -104,12 +156,9 @@ if (typeof require !== 'undefined') {
                     }
                     applyTheme({ persist: true, syncWidget: false, rerenderCharts: true });
                 }
-                localStorage.setItem('todos', JSON.stringify(state.todos));
-                localStorage.setItem('groups', JSON.stringify(state.groups));
-                localStorage.setItem('projects', JSON.stringify(state.projects));
-                localStorage.setItem('dailyPlans', JSON.stringify(state.dailyPlans));
-                localStorage.setItem('ideas', JSON.stringify(state.ideas));
-                localStorage.setItem('ideaTags', JSON.stringify(state.ideaTags));
+                // save() 会按记录更新时间写回并走乐观并发同步；
+                // main-data-changed 只让小组件刷新，不会反向触发 widget-data-changed，因而不会形成回环。
+                save();
                 renderAll();
             }
         } catch(e) { console.warn('[Widget Sync]', e); }
