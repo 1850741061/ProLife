@@ -87,9 +87,10 @@ function enqueueSyncOperation(operation) {
             return run;
         }
 
-function captureSyncSession(expectedUserId) {
+function captureSyncSession(expectedUserId, allowUnowned = false) {
             if (!currentUser || !accessToken) return null;
             if (expectedUserId && expectedUserId !== currentUser.id) return null;
+            if (!allowUnowned && localStorage.getItem('data_owner_user_id') !== currentUser.id) return null;
             return {
                 userId: currentUser.id,
                 generation: authSessionGeneration,
@@ -101,6 +102,7 @@ function isSyncSessionCurrent(session) {
             return !!session
                 && session.generation === authSessionGeneration
                 && currentUser?.id === session.userId
+                && localStorage.getItem('data_owner_user_id') === session.userId
                 && !!accessToken;
         }
 
@@ -412,8 +414,8 @@ async function signIn(email, password) {
                 if (ownerUserId && ownerUserId !== data.user.id) {
                     isolateLocalDataForUser(data.user.id);
                 }
-                if (!hasAnonymousData) {
-                    localStorage.setItem('data_owner_user_id', data.user.id);
+                if (!hasAnonymousData && !localStorage.getItem('data_owner_user_id')) {
+                    claimCrossTabDataOwnership(data.user.id);
                 }
 
                 // 启动定时刷新
@@ -438,7 +440,7 @@ async function signIn(email, password) {
         }
 
 async function resolveAnonymousData(keepLocal) {
-            const session = captureSyncSession();
+            const session = captureSyncSession(undefined, true);
             if (!session) return false;
             const accountKeys = Object.keys(getAccountScopedDefaults());
             const backup = Object.fromEntries(accountKeys.map(key => [
@@ -447,20 +449,22 @@ async function resolveAnonymousData(keepLocal) {
             ]));
 
             if (keepLocal) {
-                localStorage.setItem('data_owner_user_id', session.userId);
+                if (!claimCrossTabDataOwnership(session.userId)) return false;
                 return syncDataOnLogin();
             }
 
             backupAccountScopedLocalData(null);
+            if (!signalCrossTabOwnershipBoundary(session.userId, 'switch')) return false;
             resetAccountScopedState();
             localStorage.setItem('data_owner_user_id', session.userId);
             baseSave();
             const synced = await syncDataOnLogin();
             if (synced) return true;
 
-            Object.assign(state, backup);
-            baseSave();
+            signalCrossTabOwnershipBoundary(null, 'switch');
             localStorage.removeItem('data_owner_user_id');
+            Object.assign(state, backup);
+            baseSave(null);
             renderAll();
             return false;
         }
@@ -513,6 +517,13 @@ async function signOut({ allowUnsynced = false } = {}) {
                     }
                 }
 
+                const signingOutUserId = currentUser?.id || null;
+                const storedOwner = localStorage.getItem('data_owner_user_id');
+                const ownsCachedData = Boolean(
+                    signingOutUserId && storedOwner === signingOutUserId
+                );
+                clearTimeout(save._debounceTimer);
+
                 // 取消 Realtime 订阅（静默失败，不阻塞登出）
                 try {
                     unsubscribeToRealtime();
@@ -543,10 +554,22 @@ async function signOut({ allowUnsynced = false } = {}) {
                     }
                 }
 
-                // 清理本地状态
-                if (currentUser && currentUser.id) {
-                    localStorage.setItem('data_owner_user_id', currentUser.id);
+                // Publish the boundary only after the remote revoke attempt,
+                // immediately before clearing local ownership. Publishing it
+                // while live auth keys still exist would let a reloaded peer
+                // restore the old session and supersede the boundary.
+                if (typeof signalCrossTabOwnershipBoundary === 'function') {
+                    signalCrossTabOwnershipBoundary(null, 'logout');
                 }
+
+                // 清理本地状态
+                if (ownsCachedData) {
+                    if (hasAccountScopedLocalData()) {
+                        backupAccountScopedLocalData(signingOutUserId);
+                    }
+                    resetAccountScopedState();
+                }
+                localStorage.removeItem('data_owner_user_id');
                 currentUser = null;
                 accessToken = null;
                 refreshToken = null;
@@ -561,6 +584,10 @@ async function signOut({ allowUnsynced = false } = {}) {
                 localStorage.removeItem('user_id');
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('refresh_token');
+                // Persist the now-anonymous snapshot without deleting the
+                // boundary marker first. This final complete save supersedes
+                // the boundary while retaining its owner fence (ownerId:null).
+                baseSave(null);
                 // 登出时保留记住的账号信息，方便下次登录
 
                 console.log('[登出] 已清理登录状态');
@@ -1107,12 +1134,10 @@ function save() {
             }
         }
 
-// 页面卸载前立即同步并保存
+// Unload handlers cannot reliably finish an authenticated PATCH. Business
+// edits are already persisted immediately and retried by normal sync/polling.
 window.addEventListener('beforeunload', () => {
     baseSave();
-    if (currentUser) {
-        syncToCloud();
-    }
 });
 
 // 检查已保存的登录状态（静默失败，不阻塞应用）
@@ -1135,7 +1160,9 @@ async function checkAuthStatus() {
                     if (ownerUserId && ownerUserId !== savedUserId) {
                         isolateLocalDataForUser(savedUserId);
                     }
-                    if (!hasAnonymousData) localStorage.setItem('data_owner_user_id', savedUserId);
+                    if (!hasAnonymousData && !localStorage.getItem('data_owner_user_id')) {
+                        claimCrossTabDataOwnership(savedUserId);
+                    }
 
                     // 先主动刷新token（确保token有效），再启动定时刷新
                     if (refreshToken) {
