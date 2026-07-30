@@ -9,6 +9,12 @@ const SYNC_STATE_FIELDS_TO_SANITIZE = [
     'habits', 'habitRecords', 'projects', 'milktea', 'coffee',
     'dailyPlans', 'ideas', 'ideaTags', 'focusSessions'
 ];
+const CROSS_TAB_BUSINESS_REVISION_KEY = 'local_data_revision_v1';
+const CROSS_TAB_INSTANCE_ID = globalThis.crypto?.randomUUID?.()
+    || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+let crossTabRevisionCounter = 0;
+let crossTabBusinessMergeTimer = null;
+let crossTabCloudSyncTimer = null;
 
 function syncContentHash(value) {
     const input = stableSyncJson(value);
@@ -20,14 +26,24 @@ function syncContentHash(value) {
     return (hash >>> 0).toString(36);
 }
 
+function syncIdHash(raw) {
+    let hash = 0x811c9dc5;
+    for (const character of raw) {
+        hash ^= character.codePointAt(0);
+        hash = Math.imul(hash, 0x01000193);
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
 function encodeUnsafeSyncId(value, fallbackSeed = value) {
     const raw = String(value ?? '').trim();
     if (!raw) return `invalid_${syncContentHash(fallbackSeed)}`;
     if (SAFE_SYNC_ID_PATTERN.test(raw)) return raw;
-    return [...raw].map(character => SAFE_SYNC_ID_PATTERN.test(character)
+    const encoded = [...raw].map(character => SAFE_SYNC_ID_PATTERN.test(character)
         ? character
         : `_u${character.codePointAt(0).toString(16)}_`
     ).join('');
+    return `u_${syncIdHash(raw)}_${encoded}`;
 }
 
 function sanitizeSyncTombstone(value) {
@@ -36,9 +52,33 @@ function sanitizeSyncTombstone(value) {
     if (habitEvent) {
         return `${habitEvent[1]}${encodeUnsafeSyncId(habitEvent[2], raw)}:${habitEvent[3]}:${habitEvent[4]}`;
     }
+    const legacyHabitRecord = raw.match(/^(habit-record:)(.*):(\d{4}-\d{2}-\d{2})$/);
+    if (legacyHabitRecord) {
+        return `${legacyHabitRecord[1]}${encodeUnsafeSyncId(legacyHabitRecord[2], raw)}:${legacyHabitRecord[3]}`;
+    }
     const entity = raw.match(/^(todo|group|template|habit|project|daily-plan|idea|focus-session|finance:tx|finance:drink-tx|drink-record:milktea|drink-record:coffee):(.*)$/);
     if (entity) return `${entity[1]}:${encodeUnsafeSyncId(entity[2], raw)}`;
     return encodeUnsafeSyncId(raw, raw);
+}
+
+function mergeSanitizedHabitRecordDates(existing, incoming) {
+    if (
+        !existing || typeof existing !== 'object' || Array.isArray(existing)
+        || !incoming || typeof incoming !== 'object' || Array.isArray(incoming)
+    ) return incoming;
+    const merged = { ...existing };
+    Object.entries(incoming).forEach(([date, value]) => {
+        const currentNumber = Number(merged[date]);
+        const incomingNumber = Number(value);
+        if (
+            !Object.prototype.hasOwnProperty.call(merged, date)
+            || (Number.isFinite(incomingNumber)
+                && (!Number.isFinite(currentNumber) || incomingNumber >= currentNumber))
+        ) {
+            merged[date] = value;
+        }
+    });
+    return merged;
 }
 
 function neutralizeActiveSyncMarkup(value, keyName = '', fallbackSeed = value) {
@@ -59,6 +99,18 @@ function neutralizeActiveSyncMarkup(value, keyName = '', fallbackSeed = value) {
         return value.map(item => neutralizeActiveSyncMarkup(item, keyName, fallbackSeed));
     }
     if (value && typeof value === 'object') {
+        if (/^habitrecords$/i.test(keyName)) {
+            const result = {};
+            Object.entries(value).forEach(([habitId, dates]) => {
+                const safeHabitId = encodeUnsafeSyncId(habitId, habitId);
+                const sanitizedDates = neutralizeActiveSyncMarkup(dates, habitId, value);
+                result[safeHabitId] = mergeSanitizedHabitRecordDates(
+                    result[safeHabitId],
+                    sanitizedDates
+                );
+            });
+            return result;
+        }
         Object.entries(value).forEach(([childKey, child]) => {
             value[childKey] = neutralizeActiveSyncMarkup(child, childKey, value);
         });
@@ -106,8 +158,55 @@ function exportWidgetData() {
         }
 window.exportWidgetData = exportWidgetData;
 
-function baseSave() {
+function readLatestLocalDataRevision() {
+    try {
+        const raw = localStorage.getItem(CROSS_TAB_BUSINESS_REVISION_KEY);
+        if (!raw) return null;
+        const revision = JSON.parse(raw);
+        return revision && typeof revision === 'object' ? revision : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function localWriteOwnerIsCurrent(expectedOwner) {
+    const normalizedExpectedOwner = expectedOwner || null;
+    const storedOwner = localStorage.getItem('data_owner_user_id') || null;
+    const revision = readLatestLocalDataRevision();
+    const revisionHasOwner = Boolean(
+        revision
+        && Object.prototype.hasOwnProperty.call(revision, 'ownerId')
+    );
+    const revisionOwner = revisionHasOwner ? (revision.ownerId || null) : null;
+    const revisionOperation = revision?.operation || 'save';
+
+    // Ownership boundaries take precedence over the older owner key. This
+    // closes the interval between publishing logout/switch and clearing or
+    // replacing data_owner_user_id.
+    if (
+        revisionHasOwner
+        && (revisionOperation === 'logout' || revisionOperation === 'switch')
+        && revisionOwner !== normalizedExpectedOwner
+    ) return false;
+
+    if (storedOwner) return storedOwner === normalizedExpectedOwner;
+
+    // Once the owner key has been removed, the latest complete revision is
+    // still an ownership fence. In particular, a stale authenticated tab
+    // cannot recreate its old owner immediately after another tab logs out.
+    if (revisionHasOwner) return revisionOwner === normalizedExpectedOwner;
+    return true;
+}
+
+function baseSave(ownerOverride = undefined) {
             try {
+                const expectedOwner = ownerOverride === undefined
+                    ? (currentUser?.id || null)
+                    : (ownerOverride || null);
+                if (!localWriteOwnerIsCurrent(expectedOwner)) {
+                    console.warn('[save] 拒绝写入：本标签页账号归属已过期');
+                    return false;
+                }
                 neutralizeSyncStateInPlace();
                 state.milktea.records = ensureSyncArray(state.milktea?.records)
                     .map(record => normalizeDrinkRecord(record, 'milktea'));
@@ -133,13 +232,55 @@ function baseSave() {
                 if (currentUser && currentUser.id) {
                     localStorage.setItem('data_owner_user_id', currentUser.id);
                 }
+                if (localStorage.getItem('storage_metadata_cleanup_v1') === null) {
+                    localStorage.setItem('storage_metadata_cleanup_v1', 'complete');
+                }
+                // The marker is written last. Other tabs therefore observe a
+                // complete compatibility snapshot rather than partial keys.
+                localStorage.setItem(CROSS_TAB_BUSINESS_REVISION_KEY, JSON.stringify({
+                    tabId: CROSS_TAB_INSTANCE_ID,
+                    ownerId: expectedOwner,
+                    operation: 'save',
+                    savedAt: Date.now(),
+                    counter: ++crossTabRevisionCounter
+                }));
                 exportWidgetData();
+                return true;
             } catch (e) {
                 console.error('[save] local cache failed:', e);
                 window.__lastSyncErrorMessage = e?.stack || e?.message || String(e);
+                return false;
             }
         }
 window.baseSave = baseSave;
+
+function signalCrossTabOwnershipBoundary(ownerId = null, operation = 'logout') {
+    try {
+        localStorage.setItem(CROSS_TAB_BUSINESS_REVISION_KEY, JSON.stringify({
+            tabId: CROSS_TAB_INSTANCE_ID,
+            ownerId,
+            operation,
+            savedAt: Date.now(),
+            counter: ++crossTabRevisionCounter
+        }));
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+window.signalCrossTabOwnershipBoundary = signalCrossTabOwnershipBoundary;
+
+function claimCrossTabDataOwnership(ownerId) {
+    const normalizedOwner = ownerId || null;
+    if (!signalCrossTabOwnershipBoundary(normalizedOwner, 'switch')) return false;
+    if (normalizedOwner) {
+        localStorage.setItem('data_owner_user_id', normalizedOwner);
+    } else {
+        localStorage.removeItem('data_owner_user_id');
+    }
+    return true;
+}
+window.claimCrossTabDataOwnership = claimCrossTabDataOwnership;
 
 function normalizeFinanceTransactionId(id) {
             const raw = String(id ?? '').trim();
@@ -1218,4 +1359,140 @@ function mergeCloudRowIntoState(cloud, base = loadSyncBaseSnapshot(), serverNow 
 function getSyncErrorToastMessage(fallback) {
     const detail = window.__lastSyncErrorMessage ? String(window.__lastSyncErrorMessage).replace(/\s+/g, ' ').slice(0, 96) : '';
     return detail ? (fallback + '：' + detail) : fallback;
+}
+
+function readPersistedCrossTabSyncRow() {
+    const read = (key, fallback) => {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw == null ? fallback : JSON.parse(raw);
+        } catch (_) {
+            return fallback;
+        }
+    };
+    const archivedTodos = read('archivedTodos', []);
+    const habitRecords = read('habitRecords', {});
+    return {
+        todos: read('todos', []),
+        transactions: read('transactions', []),
+        groups: read('groups', []),
+        templates: read('templates', []),
+        archivedTodos,
+        archivedtodos: archivedTodos,
+        habits: read('habits', []),
+        habitRecords,
+        habitrecords: habitRecords,
+        projects: read('projects', []),
+        milktea: read('milktea', { records: [], settings: { weeklyLimit: 2, monthlyLimit: 8 } }),
+        coffee: read('coffee', { records: [], settings: { weeklyLimit: 3, monthlyLimit: 12 } }),
+        dailyPlans: read('dailyPlans', []),
+        ideas: read('ideas', []),
+        ideaTags: read('ideaTags', []),
+        deletedids: read('deletedIds', [])
+    };
+}
+
+function crossTabStateFingerprint() {
+    return stableSyncJson({
+        todos: state.todos,
+        transactions: state.transactions,
+        groups: state.groups,
+        templates: state.templates,
+        archivedTodos: state.archivedTodos,
+        habits: state.habits,
+        habitRecords: state.habitRecords,
+        projects: state.projects,
+        milktea: state.milktea,
+        coffee: state.coffee,
+        dailyPlans: state.dailyPlans,
+        ideas: state.ideas,
+        ideaTags: state.ideaTags,
+        deletedIds: state.deletedIds
+    });
+}
+
+function crossTabRevisionCompatible(revision) {
+    if (!revision || typeof revision !== 'object') return false;
+    const operation = revision.operation || 'save';
+    if (operation !== 'save') return false;
+    const effectiveOwner = currentUser?.id
+        || localStorage.getItem('user_id')
+        || localStorage.getItem('data_owner_user_id')
+        || null;
+    const ownerId = Object.prototype.hasOwnProperty.call(revision, 'ownerId')
+        ? (revision.ownerId || null)
+        : effectiveOwner;
+    return ownerId === effectiveOwner;
+}
+
+function fenceCrossTabSession() {
+    clearTimeout(crossTabBusinessMergeTimer);
+    clearTimeout(crossTabCloudSyncTimer);
+    clearTimeout(save._debounceTimer);
+    authSessionGeneration += 1;
+    refreshAccessTokenPromise = null;
+    if (tokenRefreshTimer) {
+        clearTimeout(tokenRefreshTimer);
+        tokenRefreshTimer = null;
+    }
+    currentUser = null;
+    accessToken = null;
+    refreshToken = null;
+    try {
+        window.setTimeout(() => window.location.reload(), 0);
+    } catch (_) {
+        // Embedded/test environments may not expose a reloadable location.
+    }
+}
+
+function reconcileCrossTabBusinessCache() {
+    const ownerId = localStorage.getItem('data_owner_user_id');
+    if (currentUser ? ownerId !== currentUser.id : Boolean(ownerId)) return false;
+    const before = crossTabStateFingerprint();
+    mergeCloudRowIntoState(
+        readPersistedCrossTabSyncRow(),
+        loadSyncBaseSnapshot(currentUser?.id || localStorage.getItem('user_id'))
+    );
+    const changed = crossTabStateFingerprint() !== before;
+    if (!changed) return false;
+    baseSave();
+    if (typeof renderAll === 'function') renderAll();
+    if (currentUser && typeof syncToCloud === 'function') {
+        clearTimeout(crossTabCloudSyncTimer);
+        crossTabCloudSyncTimer = setTimeout(() => {
+            crossTabCloudSyncTimer = null;
+            syncToCloud();
+        }, 500);
+    }
+    return true;
+}
+
+if (
+    typeof window !== 'undefined'
+    && typeof window.addEventListener === 'function'
+    && typeof rawLocalStorage !== 'undefined'
+) {
+    window.addEventListener('storage', event => {
+        if (event.key === `${PROLIFE_STORAGE_PREFIX}${SYNC_BASE_STORAGE_KEY}`) {
+            memorySyncBaseSnapshots.clear();
+            return;
+        }
+        if (
+            event.key !== `${PROLIFE_STORAGE_PREFIX}${CROSS_TAB_BUSINESS_REVISION_KEY}`
+            || event.newValue === null
+        ) return;
+        let revision = null;
+        try {
+            revision = JSON.parse(event.newValue);
+        } catch (_) {}
+        if (!crossTabRevisionCompatible(revision)) {
+            fenceCrossTabSession();
+            return;
+        }
+        clearTimeout(crossTabBusinessMergeTimer);
+        crossTabBusinessMergeTimer = setTimeout(() => {
+            crossTabBusinessMergeTimer = null;
+            reconcileCrossTabBusinessCache();
+        }, 25);
+    });
 }

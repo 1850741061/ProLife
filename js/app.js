@@ -37,9 +37,13 @@ function isolateLocalDataForUser(nextUserId) {
     if (!ownerUserId || ownerUserId === nextUserId) return false;
     if (hasAccountScopedLocalData()) backupAccountScopedLocalData(ownerUserId);
     console.warn('[account-isolation] switching cached local data owner:', ownerUserId, '=>', nextUserId);
+    if (!signalCrossTabOwnershipBoundary(nextUserId, 'switch')) {
+        console.warn('[account-isolation] ownership boundary could not be persisted');
+        return false;
+    }
     resetAccountScopedState();
     localStorage.setItem('data_owner_user_id', nextUserId);
-    baseSave();
+    if (!baseSave()) return false;
     renderAll();
     return true;
 }

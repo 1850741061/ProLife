@@ -7,12 +7,19 @@
 const PROLIFE_STORAGE_PREFIX = 'prolife_rebuild::';
 const rawLocalStorage = window.localStorage;
 const storageMigrationMarker = `${PROLIFE_STORAGE_PREFIX}storage_namespace_v1`;
+const metadataCleanupMarker = `${PROLIFE_STORAGE_PREFIX}storage_metadata_cleanup_v1`;
 const legacyStorageKeysNotToCopy = new Set([
     'user_id',
     'access_token',
     'refresh_token',
     'sync_base_snapshots_v2',
-    'auth_session_isolation_v2'
+    'auth_session_isolation_v2',
+    'data_owner_user_id',
+    'last_logged_in_user_id',
+    'saved_accounts',
+    'pendingLogoutBackup',
+    'last_account_data_backup',
+    'local_data_revision_v1'
 ]);
 
 if (rawLocalStorage.getItem(storageMigrationMarker) !== 'complete') {
@@ -28,6 +35,26 @@ if (rawLocalStorage.getItem(storageMigrationMarker) !== 'complete') {
         if (value !== null) rawLocalStorage.setItem(scopedKey, value);
     });
     rawLocalStorage.setItem(storageMigrationMarker, 'complete');
+}
+
+if (rawLocalStorage.getItem(metadataCleanupMarker) !== 'complete') {
+    const scoped = key => `${PROLIFE_STORAGE_PREFIX}${key}`;
+    const ownerId = rawLocalStorage.getItem(scoped('data_owner_user_id'));
+    const sessionUserId = rawLocalStorage.getItem(scoped('user_id'));
+    const hasLiveSession = Boolean(
+        ownerId
+        && sessionUserId
+        && ownerId === sessionUserId
+        && rawLocalStorage.getItem(scoped('access_token'))
+    );
+    if (!hasLiveSession) {
+        ['data_owner_user_id', 'last_logged_in_user_id', 'saved_accounts', 'pendingLogoutBackup']
+            .forEach(key => rawLocalStorage.removeItem(scoped(key)));
+    } else {
+        // This list was historically shared by all sibling apps.
+        rawLocalStorage.removeItem(scoped('saved_accounts'));
+    }
+    rawLocalStorage.setItem(metadataCleanupMarker, 'complete');
 }
 
 if (window.location.protocol === 'file:') {
